@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copyright 2023 ODOOGAP/PROMPTEQUATION LDA
+# with edits from theaterpedia.org
 # License LGPL-3.0 or later (http://www.gnu.org/licenses/lgpl).
 
 from . import country
@@ -12,6 +13,7 @@ from . import user_profile
 from . import sign
 from . import address
 from . import shop
+from . import post
 from . import payment
 from . import wishlist
 from . import mailing_list

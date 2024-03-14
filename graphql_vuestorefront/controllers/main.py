@@ -144,6 +144,19 @@ class GraphQLController(http.Controller, GraphQLControllerMixin):
             json.dumps(categories),
             headers={'Content-Type': 'application/json'},
         )
+    
+    @http.route('/vsf/posts', type='http', auth='public', csrf=False)
+    def vsf_posts(self):
+        self._set_website_context()
+
+        posts = []
+        for post in request.env['blog.post'].sudo():
+            posts.append(post.id)
+
+        return Response(
+            json.dumps(posts),
+            headers={'Content-Type': 'application/json'},
+        )
 
     @http.route('/vsf/products', type='http', auth='public', csrf=False)
     def vsf_products(self):

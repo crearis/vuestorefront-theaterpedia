@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copyright 2023 ODOOGAP/PROMPTEQUATION LDA
+# with edits from theaterpedia.org
 # License LGPL-3.0 or later (http://www.gnu.org/licenses/lgpl).
 
 import graphene
@@ -250,6 +251,10 @@ class Currency(OdooObjectType):
     name = graphene.String()
     symbol = graphene.String()
 
+class Post(OdooObjectType):
+    id = graphene.Int(required=True)
+    blog_id = graphene.Int(required=True)
+    name = graphene.String()
 
 class Category(OdooObjectType):
     id = graphene.Int(required=True)
