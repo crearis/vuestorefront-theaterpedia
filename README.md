@@ -1,4 +1,4 @@
-# Vuestorefront2 - Odoo Backend Modules
+# Vuestorefront-sdk - Odoo Backend Modules for the theaterpedia-vuestorefront-implementation
 
 ## Overview
 
