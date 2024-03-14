@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 # Copyright 2023 ODOOGAP/PROMPTEQUATION LDA
+# extended 2024 by theaterpedia.org
 # License LGPL-3.0 or later (http://www.gnu.org/licenses/lgpl).
 
 {
     'name': 'Vue Storefront Api',
     'version': '16.0.1.0.0',
     'summary': 'Vue Storefront API',
-    'description': """Vue Storefront API Integration""",
+    'description': """Vue Storefront API Integration, extended for theaterpedia.org""",
     'category': 'Website',
     'license': 'LGPL-3',
     'author': 'OdooGap',
