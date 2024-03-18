@@ -6,7 +6,7 @@ import graphene
 
 from odoo.addons.graphql_base import OdooObjectType
 from odoo.addons.graphql_theaterpedia.schemas import (
-    country, category, product, blog, post, order,
+    country, category, product, event, blog, post, order,
     invoice, contact_us, user_profile, sign,
     address, wishlist, shop, payment,
     mailing_list, website,
@@ -20,6 +20,7 @@ class Query(
     product.ProductQuery,
     blog.BlogQuery,
     post.PostQuery,
+    event.EventQuery,
     order.OrderQuery,
     invoice.InvoiceQuery,
     user_profile.UserProfileQuery,
@@ -53,7 +54,7 @@ class Mutation(
 schema = graphene.Schema(
     query=Query,
     mutation=Mutation,
-    types=[country.CountryList, category.CategoryList, blog.BlogList, post.PostList, product.ProductList, product.ProductVariantData, order.OrderList,
+    types=[country.CountryList, category.CategoryList, blog.BlogList, post.PostList, event.EventList, product.ProductList, product.ProductVariantData, order.OrderList,
            invoice.InvoiceList, wishlist.WishlistData, shop.CartData, mailing_list.MailingContactList,
            mailing_list.MailingListList]
 )

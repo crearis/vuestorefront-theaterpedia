@@ -14,6 +14,7 @@ from . import sign
 from . import address
 from . import shop
 from . import blog
+from . import event
 from . import post
 from . import payment
 from . import wishlist

@@ -22,7 +22,7 @@ def get_search_order(sort):
     return sorting
 
 class Blogs(graphene.Interface):
-    posts = graphene.List(Blog)
+    blogs = graphene.List(Blog)
     total_count = graphene.Int(required=True)
 
 
@@ -35,13 +35,13 @@ class BlogQuery(graphene.ObjectType):
     blog = graphene.Field(
         Blog,
         id=graphene.Int(),
-        slug=graphene.String(default_value=None),
+        # slug=graphene.String(default_value=None),
     )
     blogs = graphene.Field(
         Blogs,
         current_page=graphene.Int(default_value=1),
         page_size=graphene.Int(default_value=20),
-        search=graphene.String(default_value=False),
+        # search=graphene.String(default_value=False),
     )
 
     @staticmethod
@@ -51,8 +51,8 @@ class BlogQuery(graphene.ObjectType):
 
         if id:
             blog = Blog.search([('id', '=', id)], limit=1)
-        elif slug:
-            blog = Blog.search([('website_slug', '=', slug)], limit=1)
+        # elif slug:
+        #    blog = Blog.search([('website_slug', '=', slug)], limit=1)
         else:
             blog = Blog
 
