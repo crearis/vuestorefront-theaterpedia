@@ -48,15 +48,16 @@ def get_search_domain(env, search, **kwargs):
         domains.append([('event_type_id', '=', kwargs['event_type'])])
 
     # Filter with Address ID
-    if kwargs.get('address_id', False):
-        domains.append([('address_id', '=', kwargs['address_id'])])
+    if kwargs.get('address_ids', False):
+        address_ids = [address for address in kwargs.get['address_ids']]
+        domains.append([('address_id', 'in', address_ids)])        
 
     # Filter by stages or default to 2 or 3
     if kwargs.get('stages', False):
         stages = [stage.value for stage in kwargs.get['stages']]
-        domain += [('stage_id', 'in', stages)]
+        domains.append([('stage_id', 'in', stages)])
     else:
-        domain += [('stage_id', 'in', [2, 3])]
+        domains.append([('stage_id', 'in', [2, 3])])
 
     # Filter With Name
     if kwargs.get('name', False):
