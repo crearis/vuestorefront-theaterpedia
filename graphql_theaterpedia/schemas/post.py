@@ -6,7 +6,7 @@ import graphene
 from odoo.http import request
 
 from odoo.addons.graphql_theaterpedia.schemas.objects import (
-    Post
+    SortEnum, Post, Blog
 )
 
 def get_search_order(sort):
@@ -16,15 +16,18 @@ def get_search_order(sort):
             sorting += ', '
         sorting += '%s %s' % (field, val.value)
 
-    if not sorting:
-        sorting = 'sequence ASC, id ASC'
-
     return sorting
+    
+class PostFilterInput(graphene.InputObjectType):
+    blogs = graphene.List(graphene.Int)
+    is_published = graphene.Boolean()
 
 class Posts(graphene.Interface):
     posts = graphene.List(Post)
     total_count = graphene.Int(required=True)
 
+class PostSortInput(graphene.InputObjectType):
+    id = SortEnum()
 
 class PostList(graphene.ObjectType):
     class Meta:
@@ -39,9 +42,11 @@ class PostQuery(graphene.ObjectType):
     )
     posts = graphene.Field(
         Posts,
+        filter=graphene.Argument(PostFilterInput, default_value={}),
         current_page=graphene.Int(default_value=1),
-        page_size=graphene.Int(default_value=20),
+        page_size=graphene.Int(default_value=10),
         search=graphene.String(default_value=False),
+        sort=graphene.Argument(PostSortInput, default_value={})        
     )
 
     @staticmethod
@@ -65,9 +70,19 @@ class PostQuery(graphene.ObjectType):
         return post             
 
     @staticmethod
-    def resolve_posts(self, info, current_page, page_size, search):
+    def resolve_posts(self, info, filter, current_page, page_size, sort, search):
         env = info.context["env"]
         domain = env['website'].get_current_website().website_domain()
+        order = get_search_order(sort)
+
+        # Filter by blogs or default to all
+        if filter.get('blogs', False):
+            blog_ids = [blog_id for blog_id in filter['blogs']]
+            domain += [('blog_id', 'in', blog_ids)]
+
+        # Filter by is_published
+        if filter.get('is_published', False):
+            domain += [('is_published', '=', 'true')]
 
         if search:
             for srch in search.split(" "):
@@ -79,6 +94,8 @@ class PostQuery(graphene.ObjectType):
         else:
             offset = 0
 
-        posts = Posts.search(
-            domain, limit=page_size, offset=offset)
-        return PostList(posts=posts, total_count=10)
+        BlogPosts = env["blog.post"]
+        total_count = BlogPosts.search_count(domain)
+        posts = BlogPosts.search(
+            domain, limit=page_size, offset=offset, order=order)
+        return PostList(posts=posts, total_count=total_count)        
