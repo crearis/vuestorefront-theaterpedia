@@ -9,7 +9,7 @@ from odoo import _
 from odoo.osv import expression
 
 from odoo.addons.graphql_theaterpedia.schemas.objects import (
-    SortEnum, Event, Attribute, AttributeValue
+    SortEnum, Event, EventStage, EventTypeEnum
 )
 
 
@@ -18,8 +18,8 @@ def get_search_order(sort):
     for field, val in sort.items():
         if sorting:
             sorting += ', '
-        if field == 'price':
-            sorting += 'list_price %s' % val.value
+        if field == 'date':
+            sorting += 'date_begin %s' % val.value
         else:
             sorting += '%s %s' % (field, val.value)
 
@@ -33,20 +33,30 @@ def get_search_order(sort):
 
 
 def get_search_domain(env, search, **kwargs):
-    # Only get published products
-    domains = [env['website'].get_current_website().sale_product_domain()]
+    domains = []
 
     # Filter with ids
     if kwargs.get('ids', False):
         domains.append([('id', 'in', kwargs['ids'])])
 
-    # Filter with Category ID
-    if kwargs.get('category_id', False):
-        domains.append([('public_categ_ids', 'child_of', kwargs['category_id'])])
+    # Filter by published-status
+    if kwargs.get('published', False):
+        domains.append([('is_published', '=', kwargs['published'])])
 
-    # Filter with Category Slug
-    if kwargs.get('category_slug', False):
-        domains.append([('public_categ_slug_ids.website_slug', '=', kwargs['category_slug'])])
+    # Filter with Event Type
+    if kwargs.get('event_type', False):
+        domains.append([('event_type_id', '=', kwargs['event_type'])])
+
+    # Filter with Address ID
+    if kwargs.get('address_id', False):
+        domains.append([('address_id', '=', kwargs['address_id'])])
+
+    # Filter by stages or default to 2 or 3
+    if kwargs.get('stages', False):
+        stages = [stage.value for stage in kwargs.get['stages']]
+        domain += [('stage_id', 'in', stages)]
+    else:
+        domain += [('stage_id', 'in', [2, 3])]
 
     # Filter With Name
     if kwargs.get('name', False):
@@ -59,7 +69,7 @@ def get_search_domain(env, search, **kwargs):
             domains.append([
                 '|', '|', ('name', 'ilike', srch), ('description_sale', 'like', srch), ('default_code', 'like', srch)])
 
-    partial_domain = domains.copy()
+    """  partial_domain = domains.copy()
 
     # Product Price Filter
     if kwargs.get('min_price', False):
@@ -98,12 +108,12 @@ def get_search_domain(env, search, **kwargs):
         attributes_domain = expression.AND(attributes_domain)
         domains.append(attributes_domain)
 
-    return expression.AND(domains), expression.AND(partial_domain)
+    return expression.AND(domains), expression.AND(partial_domain) """
+    return domains
 
-
-def get_product_list(env, current_page, page_size, search, sort, **kwargs):
-    Product = env['product.template'].sudo()
-    domain, partial_domain = get_search_domain(env, search, **kwargs)
+def get_event_list(env, current_page, page_size, search, sort, **kwargs):
+    Event = env['event.event'].sudo()
+    domain = get_search_domain(env, search, **kwargs)
 
     # First offset is 0 but first page is 1
     if current_page > 1:
@@ -111,30 +121,23 @@ def get_product_list(env, current_page, page_size, search, sort, **kwargs):
     else:
         offset = 0
     order = get_search_order(sort)
-    products = Product.search(domain, order=order)
+    events = Event.search(domain, order=order)
 
-    # If attribute values are selected, we need to get the full list of attribute values and prices
-    if domain == partial_domain:
-        attribute_values = products.mapped('variant_attribute_value_ids')
-        prices = products.mapped('list_price')
-    else:
-        without_attributes_products = Product.search(partial_domain)
-        attribute_values = without_attributes_products.mapped('variant_attribute_value_ids')
-        prices = without_attributes_products.mapped('list_price')
+    dates = events.mapped('date_begin')
 
-    total_count = len(products)
-    products = products[offset:offset + page_size]
-    if prices:
-        return products, total_count, attribute_values, min(prices), max(prices)
-    return products, total_count, attribute_values, 0.0, 0.0
+    total_count = len(events)
+    events = events[offset:offset + page_size]
+    if dates:
+        return events, total_count, min(dates), max(dates)
+    return events, total_count
 
 
 class Events(graphene.Interface):
     events = graphene.List(Event)
     total_count = graphene.Int(required=True)
-    attribute_values = graphene.List(AttributeValue)
-    min_price = graphene.Float()
-    max_price = graphene.Float()
+    # attribute_values = graphene.List(AttributeValue)
+    min_date = graphene.String()
+    max_date = graphene.String()
 
 
 class EventList(graphene.ObjectType):
@@ -144,20 +147,22 @@ class EventList(graphene.ObjectType):
 
 class EventFilterInput(graphene.InputObjectType):
     ids = graphene.List(graphene.Int)
-    category_id = graphene.List(graphene.Int)
-    category_slug = graphene.String()
-    # Deprecated
-    attribute_value_id = graphene.List(graphene.Int)
-    attrib_values = graphene.List(graphene.String)
+    published = graphene.Boolean()
+    #TODO _06 remove Enum and get EventType from table event_type
+    event_type = graphene.Field(EventTypeEnum)
+    address_id = graphene.List(graphene.Int)
+    stages = graphene.List(EventStage)
     name = graphene.String()
-    min_price = graphene.Float()
-    max_price = graphene.Float()
+    #TODO _06 build min_date and max_date-logic
+    # need to implement date-conversions to get a meaningful mapping in get_event_list
+    min_date = graphene.String()
+    max_date = graphene.String()
 
 
 class EventSortInput(graphene.InputObjectType):
     id = SortEnum()
     name = SortEnum()
-    price = SortEnum()
+    date = SortEnum()
 
 
 """ class EventVariant(graphene.Interface):
@@ -192,11 +197,11 @@ class EventQuery(graphene.ObjectType):
         search=graphene.String(default_value=False),
         sort=graphene.Argument(EventSortInput, default_value={})
     )
-    attribute = graphene.Field(
-        Attribute,
-        required=True,
-        id=graphene.Int(),
-    )
+    # attribute = graphene.Field(
+    #    Attribute,
+    #    required=True,
+    #    id=graphene.Int(),
+    #)
     #event_variant = graphene.Field(
     #    EventVariant,
     #    required=True,
@@ -207,36 +212,38 @@ class EventQuery(graphene.ObjectType):
     @staticmethod
     def resolve_event(self, info, id=None, slug=None, barcode=None):
         env = info.context["env"]
-        Product = env["product.template"].sudo()
+        Event = env["event.event"].sudo()
 
         if id:
-            product = Product.search([('id', '=', id)], limit=1)
-        elif slug:
-            product = Product.search([('website_slug', '=', slug)], limit=1)
+            event = Event.search([('id', '=', id)], limit=1)
+        #TODO _06 search by slug
+        elif slug:  
+            raise GraphQLError(_('Filter event.slug not yet implemented.'))
+        #   event = Event.search([('website_slug', '=', slug)], limit=1)
         elif barcode:
-            product = Product.search([('barcode', '=', barcode)], limit=1)
+            event = Event.search([('barcode', '=', barcode)], limit=1)
         else:
-            product = Product
+            event = Event
 
-        if product:
+        if event:
             website = env['website'].get_current_website()
             request.website = website
-            if not product.can_access_from_current_website():
-                product = Product
+            if not event.can_access_from_current_website():
+                event = Event
 
-        return product
+        return event
 
     @staticmethod
     def resolve_events(self, info, filter, current_page, page_size, search, sort):
         env = info.context["env"]
-        products, total_count, attribute_values,min_price, max_price = get_product_list(
+        events, total_count, min_date, max_date = get_event_list(
             env, current_page, page_size, search, sort, **filter)
-        return ProductList(products=products, total_count=total_count, attribute_values=attribute_values,
-                           min_price=min_price, max_price=max_price)
+        return EventList(events=events, total_count=total_count,
+                           min_date=min_date, max_date=max_date)
 
-    @staticmethod
-    def resolve_attribute(self, info, id):
-        return info.context["env"]["product.attribute"].search([('id', '=', id)], limit=1)
+    # @staticmethod
+    # def resolve_attribute(self, info, id):
+    #    return info.context["env"]["product.attribute"].search([('id', '=', id)], limit=1)
 
 """     @staticmethod
     def resolve_product_variant(self, info, product_template_id, combination_id):

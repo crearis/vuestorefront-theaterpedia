@@ -30,8 +30,11 @@ FilterVisibility = graphene.Enum('FilterVisibility', [('Visible', 'visible'), ('
 OrderStage = graphene.Enum('OrderStage', [('Quotation', 'draft'), ('QuotationSent', 'sent'),
                                           ('SalesOrder', 'sale'), ('Locked', 'done'), ('Cancelled', 'cancel')])
 
-EventStage = graphene.Enum('EventStage', [('New', 'draft'), ('Booked', 'sent'), 
-                                          ('Announced', 'sale'), ('Ended', 'done'), ('Cancelled', 'cancel')])
+EventStage = graphene.Enum('EventStage', [('New', 1), ('Booked', 2), 
+                                          ('Announced', 3), ('Ended', 4), ('Cancelled', 5)])
+
+EventTypeEnum = graphene.Enum('EventTypeEnum', [('OnlineVerkauf', 1), ('Konferenz', 2), 
+                                          ('Ausstellung', 3), ('Training', 4), ('Sport', 5), ('Theater', 6)])
 
 InvoiceStatus = graphene.Enum('InvoiceStatus', [('UpsellingOpportunity', 'upselling'), ('FullyInvoiced', 'invoiced'),
                                                 ('ToInvoice', 'to invoice'), ('NothingtoInvoice', 'no')])
@@ -256,23 +259,43 @@ class Currency(OdooObjectType):
 
 class Post(OdooObjectType):
     id = graphene.Int(required=True)
+    author = graphene.Field(lambda: Partner)    
     blog = graphene.Field(lambda: Blog)
     website = graphene.Field(lambda: Website)
+    visits = graphene.Int()
+    is_published = graphene.Boolean()
+    published_date = graphene.String()
+    post_date = graphene.String()
+    write_date = graphene.String()
     name = graphene.String()
+    subtitle = graphene.String()
+    content = graphene.String()
+    meta_title = graphene.String()
+    meta_keyword = graphene.String()
+    meta_description = graphene.String()    
+    seo_name = graphene.String()
+
+    def resolve_author(self, info):
+        return self.author_id or None
 
     def resolve_blog(self, info):
-        return self.blog_id.name or None
+        return self.blog_id or None
     
     def resolve_website(self, info):
-        return self.website_id.name or None
+        return self.website_id or None
 
 class Blog(OdooObjectType):
     id = graphene.Int(required=True)
     website = graphene.Field(lambda: Website)
     name = graphene.String()
+    subtitle = graphene.String()    
+    meta_title = graphene.String()
+    meta_keyword = graphene.String()
+    meta_description = graphene.String()    
+    seo_name = graphene.String()    
 
     def resolve_website(self, info):
-        return self.website_id.name or None
+        return self.website_id or None
 
 class Category(OdooObjectType):
     id = graphene.Int(required=True)
@@ -367,12 +390,22 @@ class Ribbon(OdooObjectType):
     display_name = graphene.String()
 
 
+class EventType(OdooObjectType):
+    id = graphene.Int(required=True)
+    name = graphene.String()
+    ticket_instructions = graphene.String()
+    note = graphene.String()
+    use_sessions = graphene.Boolean()
+    seats_max = graphene.Int()
+    seats_max = graphene.Int()
+
 class Event(OdooObjectType):
     id = graphene.Int(required=True)
+    public_user = graphene.Field(lambda: User)
     company = graphene.Field(lambda: Partner)
     organizer = graphene.Field(lambda: Partner)
     address = graphene.Field(lambda: Partner)    
-    event_type_id = graphene.String()
+    event_type = graphene.Field(lambda: EventType)
     stage = EventStage()
     visibility = graphene.Int()
     name = graphene.String()
@@ -426,6 +459,9 @@ class Event(OdooObjectType):
     # first_variant = graphene.Field((lambda: Product), description='Specific to use in Product Template')
     json_ld = generic.GenericScalar()
 
+    def resolve_public_user(self, info):
+        return self.user_id or None
+
     def resolve_company(self, info):
         return self.company_id or None    
 
@@ -434,6 +470,9 @@ class Event(OdooObjectType):
 
     def resolve_address(self, info):
         return self.address_id or None 
+
+    def resolve_event_type(self, info):
+        return self.event_type_id or None 
 
     def resolve_stage(self, info):
         return self.state or None 
