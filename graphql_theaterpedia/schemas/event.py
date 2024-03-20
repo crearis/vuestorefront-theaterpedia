@@ -6,9 +6,10 @@ import graphene
 from graphql import GraphQLError
 from odoo.http import request
 from odoo import _
+from odoo.osv import expression
 
 from odoo.addons.graphql_theaterpedia.schemas.objects import (
-    SortEnum, Event
+    SortEnum, Event, EventStage, EventType
 )
 
 def get_search_order(sort):
@@ -31,6 +32,68 @@ def get_search_order(sort):
 
     return sorting
 
+def get_search_domain(env, search, **kwargs):
+    domains = [env['website'].get_current_website().website_domain()]
+
+    # Filter with ids
+    if kwargs.get('ids', False):
+        domains.append([('id', 'in', kwargs['ids'])])
+
+    # Filter by published-status
+    if kwargs.get('published', False):
+        domains.append([('is_published', '=', kwargs['published'])])
+
+    # Filter with Event Type
+    if kwargs.get('event_type', False):
+        domains.append([('event_type_id', '=', kwargs['event_type'])])
+
+    # Filter with Address ID
+    if kwargs.get('address_ids', False):
+        address_ids = [address for address in kwargs.get['address_ids']]
+        domains.append([('address_id', 'in', address_ids)])        
+
+    # Filter by stages or default to 2 or 3
+    if kwargs.get('stages', False):
+        stages = [stage.id for stage in kwargs.get['stages']]
+        domains.append([('stage_id', 'in', stages)])
+    else:
+        domains.append([('stage_id', 'in', [2, 3])])
+
+    # Filter With Name
+    if kwargs.get('name', False):
+        name = kwargs['name']
+        for n in name.split(" "):
+            domains.append([('name', 'ilike', n)])
+
+    if search:
+        for srch in search.split(" "):
+            domains.append([
+                '|', '|', ('name', 'ilike', srch), ('subtitle', 'like', srch), ('description', 'like', srch)])
+            
+    #TODO _06 adopt partial_domain from product.py
+
+    return expression.AND(domains)
+
+def get_event_list(env, current_page, page_size, search, sort, **kwargs):
+    Event = env['event.event'].sudo()
+    domain = get_search_domain(env, search, **kwargs)
+
+    # First offset is 0 but first page is 1
+    if current_page > 1:
+        offset = (current_page - 1) * page_size
+    else:
+        offset = 0
+    order = get_search_order(sort)
+    events = Event.search(domain, order=order)
+
+    dates = events.mapped('date_begin')
+
+    total_count = len(events)
+    events = events[offset:offset + page_size]
+    if dates:
+        return events, total_count, min(dates), max(dates)
+    return events, total_count, "no min date", "no max date"
+
 class Events(graphene.Interface):
     events = graphene.List(Event)
     total_count = graphene.Int(required=True)
@@ -49,6 +112,18 @@ class EventSortInput(graphene.InputObjectType):
     date = SortEnum()
     stage = SortEnum()
 
+class EventFilterInput(graphene.InputObjectType):
+    ids = graphene.List(graphene.Int)
+    published = graphene.Boolean()
+    event_type = graphene.Int()
+    address_id = graphene.List(graphene.Int)
+    stages = graphene.List(graphene.Int)
+    name = graphene.String()
+    #TODO _06 build min_date and max_date-logic
+    # need to implement date-conversions to get a meaningful mapping in get_event_list
+    min_date = graphene.String()
+    max_date = graphene.String()
+
 class EventQuery(graphene.ObjectType):
     event = graphene.Field(
         Event,
@@ -58,7 +133,7 @@ class EventQuery(graphene.ObjectType):
     )
     events = graphene.Field(
         Events,
-        # filter=graphene.Argument(EventFilterInput, default_value={}),
+        filter=graphene.Argument(EventFilterInput, default_value={}),
         current_page=graphene.Int(default_value=1),
         page_size=graphene.Int(default_value=20),
         search=graphene.String(default_value=False),
@@ -90,24 +165,9 @@ class EventQuery(graphene.ObjectType):
         return event
 
     @staticmethod
-    def resolve_events(self, info, current_page, page_size, search, sort):
+    def resolve_events(self, info, filter, current_page, page_size, search, sort):
         env = info.context["env"]
-        domain = env['website'].get_current_website().website_domain()
-        order = get_search_order(sort)
-
-        if search:
-            for srch in search.split(" "):
-                domain += [('name', 'ilike', srch)]
-
-        # First offset is 0 but first page is 1
-        if current_page > 1:
-            offset = (current_page - 1) * page_size
-        else:
-            offset = 0
-
-        AllEvents = env["event.event"]
-        total_count = AllEvents.search_count(domain)
-        events = AllEvents.search(
-            domain, limit=page_size, offset=offset, order=order)
-        return EventList(events=events, total_count=total_count)          
+        events, total_count, min_date, max_date = get_event_list(
+            env, current_page, page_size, search, sort, **filter)
+        return EventList(events=events, total_count=total_count, min_date=min_date, max_date=max_date)          
 
