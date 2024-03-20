@@ -31,7 +31,7 @@ def get_search_order(sort):
 
     return sorting
 
-
+""" 
 def get_search_domain(env, search, **kwargs):
     domains = []
 
@@ -69,9 +69,9 @@ def get_search_domain(env, search, **kwargs):
         for srch in search.split(" "):
             domains.append([
                 '|', '|', ('name', 'ilike', srch), ('description_sale', 'like', srch), ('default_code', 'like', srch)])
+    """
 
-    """  partial_domain = domains.copy()
-
+"""  partial_domain = domains.copy()
     # Product Price Filter
     if kwargs.get('min_price', False):
         domains.append([('list_price', '>=', float(kwargs['min_price']))])
@@ -109,12 +109,12 @@ def get_search_domain(env, search, **kwargs):
         attributes_domain = expression.AND(attributes_domain)
         domains.append(attributes_domain)
 
-    return expression.AND(domains), expression.AND(partial_domain) """
-    return domains
+    return expression.AND(domains), expression.AND(partial_domain)
+    return domains  """
 
 def get_event_list(env, current_page, page_size, search, sort, **kwargs):
     Event = env['event.event'].sudo()
-    domain = get_search_domain(env, search, **kwargs)
+    domain = env['website'].get_current_website().website_domain()
 
     # First offset is 0 but first page is 1
     if current_page > 1:
@@ -192,7 +192,7 @@ class EventQuery(graphene.ObjectType):
     )
     events = graphene.Field(
         Events,
-        filter=graphene.Argument(EventFilterInput, default_value={}),
+        # filter=graphene.Argument(EventFilterInput, default_value={}),
         current_page=graphene.Int(default_value=1),
         page_size=graphene.Int(default_value=20),
         search=graphene.String(default_value=False),
@@ -235,12 +235,28 @@ class EventQuery(graphene.ObjectType):
         return event
 
     @staticmethod
-    def resolve_events(self, info, filter, current_page, page_size, search, sort):
+    def resolve_events(self, info, current_page, page_size, search, sort):
         env = info.context["env"]
-        events, total_count, min_date, max_date = get_event_list(
-            env, current_page, page_size, search, sort, **filter)
-        return EventList(events=events, total_count=total_count,
-                           min_date=min_date, max_date=max_date)
+        domain = env['website'].get_current_website().website_domain()
+        order = get_search_order(sort)
+
+        if search:
+            for srch in search.split(" "):
+                domain += [('name', 'ilike', srch)]
+
+        # First offset is 0 but first page is 1
+        if current_page > 1:
+            offset = (current_page - 1) * page_size
+        else:
+            offset = 0
+
+        AllEvents = env["event.event"]
+        total_count = AllEvents.search_count(domain)
+        events = AllEvents.search(
+            domain, limit=page_size, offset=offset, order=order)
+        return EventList(events=events, total_count=total_count)          
+
+
 
     # @staticmethod
     # def resolve_attribute(self, info, id):
