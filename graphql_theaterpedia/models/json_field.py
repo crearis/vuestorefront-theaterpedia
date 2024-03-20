@@ -1,7 +1,7 @@
-from odoo import models, fields, api
+from odoo.fields import Field
 import psycopg2
 
-class JsonField(fields.Field):
+class JsonField(Field):
     """
     Represents a postgresql Json column (JSON values are mapped to the Python equivalent type of list/dict).
     """
@@ -17,10 +17,3 @@ class JsonField(fields.Field):
             return None
         else:
             return psycopg2.extras.Json(value)
-
-class EventEvent(models.Model):
-    _inherit = "event.event"
-
-    teasertext = fields.Char('Short Description', translate=True, default='')
-    blocks = JsonField('Pruvious Blocks', required=False, default="'{}'")   # a json object represented as dict / list / python primitives, see: https://gist.github.com/danmana/5242f37b7d63daf4698de7c61c8b59fc
-    sync_id = fields.Char('Sync Id', translate=False, default='')

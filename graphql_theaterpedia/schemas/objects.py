@@ -266,12 +266,14 @@ class Post(OdooObjectType):
     write_date = graphene.String()
     name = graphene.String()
     subtitle = graphene.String()
+    teasertext = graphene.String()
     content = graphene.String()
     blocks = graphene.String()
     meta_title = graphene.String()
     meta_keyword = graphene.String()
     meta_description = graphene.String()    
     seo_name = graphene.String()
+    last_update = graphene.String()
 
     def resolve_author(self, info):
         return self.author_id or None
@@ -281,6 +283,9 @@ class Post(OdooObjectType):
     
     def resolve_website(self, info):
         return self.website_id or None
+
+    def resolve_last_update(self, info):
+        return self.__last_update or None
 
 class Blog(OdooObjectType):
     id = graphene.Int(required=True)
@@ -443,6 +448,7 @@ class Event(OdooObjectType):
     # is_in_wishlist = graphene.Boolean()
     #TODO _05 Specific for Event:Course/Sessions
     # qty = graphene.Float()
+    last_update = graphene.String()
     slug = graphene.String()
     #TODO _05 Templates, Variants, Attributes ...
     # alternative_products = graphene.List(graphene.NonNull(lambda: Product))
@@ -501,6 +507,9 @@ class Event(OdooObjectType):
 
     def resolve_meta_description(self, info):
         return self.website_meta_description or None
+
+    def resolve_last_update(self, info):
+        return self.__last_update or None    
 
     """ 
     def resolve_image(self, info):

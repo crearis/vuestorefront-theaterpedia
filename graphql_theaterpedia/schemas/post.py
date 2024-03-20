@@ -4,10 +4,22 @@
 
 import graphene
 from odoo.http import request
-
+from graphql import GraphQLError
+from odoo import _
 from odoo.addons.graphql_theaterpedia.schemas.objects import (
     SortEnum, Post, Blog
 )
+
+def get_post(env, post_id):
+    BlogPost = env['blog.post'].with_context().sudo()
+    post = BlogPost.browse(post_id)
+
+    #TODO _07 check_access_rights('read') for post
+    # Validate if the blog-post exists and if the user has access to this address
+    if not post or not post.exists():
+        raise GraphQLError(_('BlogPost not found.'))
+
+    return post
 
 def get_search_order(sort):
     sorting = ''
@@ -98,4 +110,118 @@ class PostQuery(graphene.ObjectType):
         total_count = BlogPosts.search_count(domain)
         posts = BlogPosts.search(
             domain, limit=page_size, offset=offset, order=order)
-        return PostList(posts=posts, total_count=total_count)        
+        return PostList(posts=posts, total_count=total_count)
+    
+class AddBlogPostInput(graphene.InputObjectType):
+    name = graphene.String(required=True)
+    """ partner-id """
+    author_id = graphene.Int(required=True)
+    blog_id = graphene.Int()
+    subtitle = graphene.String()
+    teasertext = graphene.String()
+    blocks = graphene.String()
+
+class UpdatePostInput(graphene.InputObjectType):
+    id = graphene.Int(required=True)
+    name = graphene.String()
+    """ partner-id """
+    author_id = graphene.Int()
+    blog_id = graphene.Int()
+    subtitle = graphene.String()
+    teasertext = graphene.String()
+    blocks = graphene.String()
+
+class UpdateSyncIdInput(graphene.InputObjectType):
+    id = graphene.Int(required=True)
+    sync_id = graphene.Int()
+
+class AddPost(graphene.Mutation):
+    class Arguments:
+        post = AddBlogPostInput()
+
+    Output = Post
+
+    @staticmethod
+    def mutate(self, info, post):
+        env = info.context["env"]
+        BlogPost = env['blog.post'].sudo().with_context(tracking_disable=True)
+
+        values = {
+            'name': post.get('name'),
+            'author_id': post.get('author_id'),
+            'blog_id': post.get('blog_id'),
+            'subtitle': post.get('subtitle'),
+            'teasertext': post.get('teasertext'),
+            'blocks': post.get('blocks'),
+        }
+
+        # Create post entry
+        post = BlogPost.create(values)
+
+        return post
+    
+class UpdatePost(graphene.Mutation):
+    class Arguments:
+        post = UpdatePostInput(required=True)
+
+    Output = Post
+
+    @staticmethod
+    def mutate(self, info, post):
+        env = info.context["env"]
+        post = get_post(env, post['id'])
+
+        values = {
+            'name': post.get('name'),
+            'author_id': post.get('author_id'),
+            'blog_id': post.get('blog_id'),
+            'subtitle': post.get('subtitle'),
+            'teasertext': post.get('teasertext'),
+            'blocks': post.get('blocks'),
+        }
+
+        if post.get('name'):
+            values.update({'name': post['name']})
+        if post.get('author_id'):
+            values.update({'author_id': post['author_id']})
+        if post.get('blog_id'):
+            values.update({'blog_id': post['blog_id']})
+        if post.get('subtitle'):
+            values.update({'subtitle': post['subtitle']})
+        if post.get('teasertext'):
+            values.update({'teasertext': post['teasertext']})
+        if post.get('blocks'):
+            values.update({'blocks': post['blocks']})    
+
+        if values:
+            post.write(values)
+
+        return post
+    
+class UpdateSyncId(graphene.Mutation):
+    class Arguments:
+        post = UpdateSyncIdInput(required=True)
+
+    Output = Post
+
+    @staticmethod
+    def mutate(self, info, post):
+        env = info.context["env"]
+        post = get_post(env, post['id'])
+
+        values = {
+            'sync_id': post.get('sync_id'),
+        }
+
+        if post.get('sync_id'):
+            values.update({'sync_id': post['sync_id']})  
+
+        if values:
+            post.write(values)        
+
+        return post
+    
+class BlogPostMutation(graphene.ObjectType):
+    add_post = AddPost.Field(description='Add new blogpost and make it active.')
+    update_sync_id = UpdateSyncId.Field(description="Update the SyncId of a blogpost.")
+    update_post = UpdatePost.Field(description="Update a blogpost and make it active.")

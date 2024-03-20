@@ -41,6 +41,7 @@ class Mutation(
     user_profile.UserProfileMutation,
     sign.SignMutation,
     address.AddressMutation,
+    post.BlogPostMutation,
     wishlist.WishlistMutation,
     shop.ShopMutation,
     payment.PaymentMutation,
