@@ -30,9 +30,6 @@ FilterVisibility = graphene.Enum('FilterVisibility', [('Visible', 'visible'), ('
 OrderStage = graphene.Enum('OrderStage', [('Quotation', 'draft'), ('QuotationSent', 'sent'),
                                           ('SalesOrder', 'sale'), ('Locked', 'done'), ('Cancelled', 'cancel')])
 
-EventStage = graphene.Enum('EventStage', [('New', 1), ('Booked', 2), 
-                                          ('Announced', 3), ('Ended', 4), ('Cancelled', 5)])
-
 EventTypeEnum = graphene.Enum('EventTypeEnum', [('OnlineVerkauf', 1), ('Konferenz', 2), 
                                           ('Ausstellung', 3), ('Training', 4), ('Sport', 5), ('Theater', 6)])
 
@@ -399,6 +396,14 @@ class EventType(OdooObjectType):
     seats_max = graphene.Int()
     seats_max = graphene.Int()
 
+class EventStage(OdooObjectType):
+    id = graphene.Int(required=True)
+    name = graphene.String()
+    description = graphene.String()
+    legend_blocked = graphene.String()
+    legend_done = graphene.String()
+    legend_normal = graphene.String()
+
 class Event(OdooObjectType):
     id = graphene.Int(required=True)
     public_user = graphene.Field(lambda: User)
@@ -406,7 +411,7 @@ class Event(OdooObjectType):
     organizer = graphene.Field(lambda: Partner)
     address = graphene.Field(lambda: Partner)    
     event_type = graphene.Field(lambda: EventType)
-    stage = EventStage()
+    stage = graphene.Field(lambda: EventStage)
     visibility = graphene.Int()
     name = graphene.String()
     display_name = graphene.String()
@@ -475,7 +480,7 @@ class Event(OdooObjectType):
         return self.event_type_id or None 
 
     def resolve_stage(self, info):
-        return self.state or None 
+        return self.stage_id or None 
 
     def resolve_visibility(self, info):
         if self.website_published:
