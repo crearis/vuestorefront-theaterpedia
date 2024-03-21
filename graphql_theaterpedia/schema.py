@@ -42,6 +42,7 @@ class Mutation(
     sign.SignMutation,
     address.AddressMutation,
     post.BlogPostMutation,
+    event.EventMutation,
     wishlist.WishlistMutation,
     shop.ShopMutation,
     payment.PaymentMutation,

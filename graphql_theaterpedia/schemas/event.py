@@ -9,8 +9,19 @@ from odoo import _
 from odoo.osv import expression
 
 from odoo.addons.graphql_theaterpedia.schemas.objects import (
-    SortEnum, Event, EventStage, EventType
+    SortEnum, Event, EventStage, EventType, EventEditMode
 )
+
+def get_event(env, event_id):
+    Event = env['event.event'].with_context().sudo()
+    event = Event.browse(event_id)
+
+    #TODO _07 check_access_rights('read') for event
+    # Validate if the blog-post exists and if the user has access to this address
+    if not event or not event.exists():
+        raise GraphQLError(_('Event not found.'))
+    
+    return event
 
 def get_search_order(sort):
     sorting = ''
@@ -116,6 +127,7 @@ class EventFilterInput(graphene.InputObjectType):
     ids = graphene.List(graphene.Int)
     published = graphene.Boolean()
     event_type = graphene.Int()
+    edit_mode = graphene.List(EventEditMode)
     address_id = graphene.List(graphene.Int)
     stages = graphene.List(graphene.Int)
     name = graphene.String()
@@ -171,3 +183,95 @@ class EventQuery(graphene.ObjectType):
             env, current_page, page_size, search, sort, **filter)
         return EventList(events=events, total_count=total_count, min_date=min_date, max_date=max_date)          
 
+class UpdateEventInput(graphene.InputObjectType):
+    id = graphene.Int(required=True)
+    name = graphene.String()
+    subtitle = graphene.String()
+    description = graphene.String()
+    blocks = graphene.String()
+    note = graphene.String()
+    meta_title = graphene.String()
+    meta_keyword = graphene.String()
+    meta_description = graphene.String()    
+
+class UpdateSyncIdInput(graphene.InputObjectType):
+    id = graphene.Int(required=True)
+    sync_id = graphene.Int()
+
+    
+class UpdateEvent(graphene.Mutation):
+    class Arguments:
+        event = UpdateEventInput(required=True)
+
+    Output = Event
+
+    @staticmethod
+    def mutate(self, info, event):
+        env = info.context["env"]
+        event = get_event(env, event['id'])
+
+        #TODO _05 event-update-logik noch besser verstehen
+        # mir scheint, dass event doppelt belegt wird
+        # - einmal mit den alten Werten
+        # - einmal mit den neuen Werten
+        # versuchen, event umzubenennen und zu schauen, ob das die Logik beeinflusst
+        # derselbe Fehler auch in UpdateBlogPost
+
+        values = {
+            'name': event.get('name'),
+            'note': event.get('note'),
+            'subtitle': event.get('subtitle'),
+            'description': event.get('description'),
+            'meta_title': event.get('meta_title'),
+            'meta_keyword': event.get('meta_keyword'),
+            'meta_description': event.get('meta_description'),                        
+        }
+
+        if event.get('name'):
+            values.update({'name': event['name']})
+        if event.get('note'):
+            values.update({'note': event['note']})
+        if event.get('meta_title'):
+            values.update({'meta_title': event['meta_title']})
+        if event.get('subtitle'):
+            values.update({'subtitle': event['subtitle']})
+        if event.get('description'):
+            values.update({'description': event['description']})
+        if event.get('blocks'):
+            values.update({'blocks': event['blocks']}) 
+        if event.get('meta_keyword'):
+            values.update({'meta_keyword': event['meta_keyword']})               
+        if event.get('meta_description'):
+            values.update({'meta_description': event['meta_description']}) 
+
+        if values:
+            event.write(values)
+
+        return event
+    
+class UpdateSyncId(graphene.Mutation):
+    class Arguments:
+        event = UpdateSyncIdInput(required=True)
+
+    Output = Event
+
+    @staticmethod
+    def mutate(self, info, event):
+        env = info.context["env"]
+        event = get_event(env, event['id'])
+
+        values = {
+            'sync_id': event['sync_id'],
+        }
+
+        if event['sync_id']:
+            values.update({'sync_id': event['sync_id']})  
+
+        if values:
+            event.write(values)        
+
+        return event
+    
+class EventMutation(graphene.ObjectType):
+    update_sync_id = UpdateSyncId.Field(description="Update the SyncId of an Event.")
+    update_event = UpdateEvent.Field(description="Update event content.")

@@ -33,6 +33,8 @@ OrderStage = graphene.Enum('OrderStage', [('Quotation', 'draft'), ('QuotationSen
 EventTypeEnum = graphene.Enum('EventTypeEnum', [('OnlineVerkauf', 1), ('Konferenz', 2), 
                                           ('Ausstellung', 3), ('Training', 4), ('Sport', 5), ('Theater', 6)])
 
+EventEditMode = graphene.Enum('EventEditMode', [('locked', 'gesperrt'), ('blocks', 'Blocks ändern'), ('content', 'Content ändern'), ('full', 'voll änderbar')])
+
 InvoiceStatus = graphene.Enum('InvoiceStatus', [('UpsellingOpportunity', 'upselling'), ('FullyInvoiced', 'invoiced'),
                                                 ('ToInvoice', 'to invoice'), ('NothingtoInvoice', 'no')])
 
@@ -417,13 +419,15 @@ class Event(OdooObjectType):
     organizer = graphene.Field(lambda: Partner)
     address = graphene.Field(lambda: Partner)    
     event_type = graphene.Field(lambda: EventType)
+    edit_mode = EventEditMode()
     stage = graphene.Field(lambda: EventStage)
     visibility = graphene.Int()
     name = graphene.String()
     display_name = graphene.String()
     barcode = graphene.String()
     subtitle = graphene.String()
-    description = graphene.String()
+    teasertext = graphene.String()
+    sync_id = graphene.String()
     blocks = graphene.String()
     ticket_instructions = graphene.String()
     note = graphene.String()
@@ -496,7 +500,7 @@ class Event(OdooObjectType):
         else:
             return 0
 
-    def resolve_description(self, info):
+    def resolve_teasertext(self, info):
         return self.description or None
 
     def resolve_meta_title(self, info):
