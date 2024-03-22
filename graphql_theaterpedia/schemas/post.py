@@ -120,16 +120,21 @@ class AddBlogPostInput(graphene.InputObjectType):
     subtitle = graphene.String()
     description = graphene.String()
     blocks = graphene.String()
+    meta_title = graphene.String()
+    meta_keywords = graphene.String()
+    meta_description = graphene.String()    
 
 class UpdatePostInput(graphene.InputObjectType):
     id = graphene.Int(required=True)
     name = graphene.String()
     """ partner-id """
     author_id = graphene.Int()
-    blog_id = graphene.Int()
     subtitle = graphene.String()
     description = graphene.String()
     blocks = graphene.String()
+    meta_title = graphene.String()
+    meta_keywords = graphene.String()
+    meta_description = graphene.String()
 
 class UpdateSyncIdInput(graphene.InputObjectType):
     id = graphene.Int(required=True)
@@ -153,9 +158,9 @@ class AddPost(graphene.Mutation):
             'subtitle': post.get('subtitle'),
             'description': post.get('description'),
             'blocks': post.get('blocks'),
-            'meta_title': post.get('meta_title'),
-            'meta_keywords': post.get('meta_keywords'),
-            'meta_description': post.get('meta_description'),               
+            'website_meta_title': post.get('meta_title'),
+            'website_meta_keywords': post.get('meta_keywords'),
+            'website_meta_description': post.get('meta_description'),               
         }
 
         # Create post entry
@@ -172,26 +177,23 @@ class UpdatePost(graphene.Mutation):
     @staticmethod
     def mutate(self, info, post):
         env = info.context["env"]
-        post = get_post(env, post['id'])
+        BlogPost = get_post(env, post['id'])
 
         values = {
             'name': post.get('name'),
             'author_id': post.get('author_id'),
-            'blog_id': post.get('blog_id'),
             'subtitle': post.get('subtitle'),
             'description': post.get('description'),
             'blocks': post.get('blocks'),
-            'meta_title': post.get('meta_title'),
-            'meta_keywords': post.get('meta_keywords'),
-            'meta_description': post.get('meta_description'),            
+            'website_meta_title': post.get('meta_title'),
+            'website_meta_keywords': post.get('meta_keywords'),
+            'website_meta_description': post.get('meta_description'),            
         }
 
         if post.get('name'):
             values.update({'name': post['name']})
         if post.get('author_id'):
             values.update({'author_id': post['author_id']})
-        if post.get('blog_id'):
-            values.update({'blog_id': post['blog_id']})
         if post.get('subtitle'):
             values.update({'subtitle': post['subtitle']})
         if post.get('description'):
@@ -199,16 +201,16 @@ class UpdatePost(graphene.Mutation):
         if post.get('blocks'):
             values.update({'blocks': post['blocks']})
         if post.get('meta_title'):
-            values.update({'meta_title': post['meta_title']})            
+            values.update({'website_meta_title': post['meta_title']})            
         if post.get('meta_keywords'):
-            values.update({'meta_keywords': post['meta_keywords']})               
+            values.update({'website_meta_keywords': post['meta_keywords']})               
         if post.get('meta_description'):
-            values.update({'meta_description': post['meta_description']})                 
+            values.update({'website_meta_description': post['meta_description']})                 
 
         if values:
-            post.write(values)
+            BlogPost.write(values)
 
-        return post
+        return BlogPost
     
 class UpdateSyncId(graphene.Mutation):
     class Arguments:
@@ -219,7 +221,7 @@ class UpdateSyncId(graphene.Mutation):
     @staticmethod
     def mutate(self, info, post):
         env = info.context["env"]
-        post = get_post(env, post['id'])
+        BlogPost = get_post(env, post['id'])
 
         values = {
             'sync_id': post.get('sync_id'),
@@ -229,9 +231,9 @@ class UpdateSyncId(graphene.Mutation):
             values.update({'sync_id': post['sync_id']})  
 
         if values:
-            post.write(values)        
+            BlogPost.write(values)        
 
-        return post
+        return BlogPost
     
 class BlogPostMutation(graphene.ObjectType):
     add_post = AddPost.Field(description='Add new blogpost and make it active.')

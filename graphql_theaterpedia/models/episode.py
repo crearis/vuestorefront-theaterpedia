@@ -21,7 +21,7 @@ class JsonField(fields.Field):
 class BlogPost(models.Model):
     _inherit = "blog.post"
 
-    description = fields.Char('Teasertext for detailed preview', translate=True, default='')
+    description = fields.Char('Teasertext', translate=True, default='')
     blocks = JsonField('Pruvious Blocks', required=False, default="'{}'")   # a json object represented as dict / list / python primitives, see: https://gist.github.com/danmana/5242f37b7d63daf4698de7c61c8b59fc
     sync_id = fields.Char('Sync Id', translate=False, default='')
     

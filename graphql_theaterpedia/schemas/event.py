@@ -192,7 +192,7 @@ class UpdateEventInput(graphene.InputObjectType):
     note = graphene.String()
     meta_title = graphene.String()
     meta_keywords = graphene.String()
-    meta_description = graphene.String()    
+    meta_description = graphene.String()
 
 class UpdateSyncIdInput(graphene.InputObjectType):
     id = graphene.Int(required=True)
@@ -208,23 +208,16 @@ class UpdateEvent(graphene.Mutation):
     @staticmethod
     def mutate(self, info, event):
         env = info.context["env"]
-        event = get_event(env, event['id'])
-
-        #TODO _05 event-update-logik noch besser verstehen
-        # mir scheint, dass event doppelt belegt wird
-        # - einmal mit den alten Werten
-        # - einmal mit den neuen Werten
-        # versuchen, event umzubenennen und zu schauen, ob das die Logik beeinflusst
-        # derselbe Fehler auch in UpdateBlogPost
+        EventEvent = get_event(env, event['id'])
 
         values = {
             'name': event.get('name'),
             'note': event.get('note'),
             'subtitle': event.get('subtitle'),
             'description': event.get('description'),
-            'meta_title': event.get('meta_title'),
-            'meta_keywords': event.get('meta_keywords'),
-            'meta_description': event.get('meta_description'),                        
+            'website_meta_title': event.get('meta_title'),
+            'website_meta_keywords': event.get('meta_keywords'),
+            'website_meta_description': event.get('meta_description'),                        
         }
 
         if event.get('name'):
@@ -238,16 +231,16 @@ class UpdateEvent(graphene.Mutation):
         if event.get('blocks'):
             values.update({'blocks': event['blocks']}) 
         if event.get('meta_title'):
-            values.update({'meta_title': event['meta_title']})            
+            values.update({'website_meta_title': event['meta_title']})            
         if event.get('meta_keywords'):
-            values.update({'meta_keywords': event['meta_keywords']})               
+            values.update({'website_meta_keywords': event['meta_keywords']})               
         if event.get('meta_description'):
-            values.update({'meta_description': event['meta_description']}) 
+            values.update({'website_meta_description': event['meta_description']}) 
 
         if values:
-            event.write(values)
+            EventEvent.write(values)
 
-        return event
+        return EventEvent
     
 class UpdateSyncId(graphene.Mutation):
     class Arguments:
@@ -258,19 +251,19 @@ class UpdateSyncId(graphene.Mutation):
     @staticmethod
     def mutate(self, info, event):
         env = info.context["env"]
-        event = get_event(env, event['id'])
+        EventEvent = get_event(env, event['id'])
 
         values = {
-            'sync_id': event['sync_id'],
+            'sync_id': event.get('sync_id'),
         }
 
-        if event['sync_id']:
+        if event.get('sync_id'):
             values.update({'sync_id': event['sync_id']})  
 
         if values:
-            event.write(values)        
+            EventEvent.write(values)        
 
-        return event
+        return EventEvent
     
 class EventMutation(graphene.ObjectType):
     update_sync_id = UpdateSyncId.Field(description="Update the SyncId of an Event.")
