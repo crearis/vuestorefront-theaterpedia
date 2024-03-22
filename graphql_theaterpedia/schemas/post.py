@@ -118,7 +118,7 @@ class AddBlogPostInput(graphene.InputObjectType):
     author_id = graphene.Int(required=True)
     blog_id = graphene.Int()
     subtitle = graphene.String()
-    teasertext = graphene.String()
+    description = graphene.String()
     blocks = graphene.String()
 
 class UpdatePostInput(graphene.InputObjectType):
@@ -128,7 +128,7 @@ class UpdatePostInput(graphene.InputObjectType):
     author_id = graphene.Int()
     blog_id = graphene.Int()
     subtitle = graphene.String()
-    teasertext = graphene.String()
+    description = graphene.String()
     blocks = graphene.String()
 
 class UpdateSyncIdInput(graphene.InputObjectType):
@@ -151,8 +151,11 @@ class AddPost(graphene.Mutation):
             'author_id': post.get('author_id'),
             'blog_id': post.get('blog_id'),
             'subtitle': post.get('subtitle'),
-            'teasertext': post.get('teasertext'),
+            'description': post.get('description'),
             'blocks': post.get('blocks'),
+            'meta_title': post.get('meta_title'),
+            'meta_keywords': post.get('meta_keywords'),
+            'meta_description': post.get('meta_description'),               
         }
 
         # Create post entry
@@ -176,8 +179,11 @@ class UpdatePost(graphene.Mutation):
             'author_id': post.get('author_id'),
             'blog_id': post.get('blog_id'),
             'subtitle': post.get('subtitle'),
-            'teasertext': post.get('teasertext'),
+            'description': post.get('description'),
             'blocks': post.get('blocks'),
+            'meta_title': post.get('meta_title'),
+            'meta_keywords': post.get('meta_keywords'),
+            'meta_description': post.get('meta_description'),            
         }
 
         if post.get('name'):
@@ -188,10 +194,16 @@ class UpdatePost(graphene.Mutation):
             values.update({'blog_id': post['blog_id']})
         if post.get('subtitle'):
             values.update({'subtitle': post['subtitle']})
-        if post.get('teasertext'):
-            values.update({'teasertext': post['teasertext']})
+        if post.get('description'):
+            values.update({'description': post['description']})
         if post.get('blocks'):
-            values.update({'blocks': post['blocks']})    
+            values.update({'blocks': post['blocks']})
+        if post.get('meta_title'):
+            values.update({'meta_title': post['meta_title']})            
+        if post.get('meta_keywords'):
+            values.update({'meta_keywords': post['meta_keywords']})               
+        if post.get('meta_description'):
+            values.update({'meta_description': post['meta_description']})                 
 
         if values:
             post.write(values)

@@ -21,7 +21,6 @@ class JsonField(fields.Field):
 class EventEvent(models.Model):
     _inherit = "event.event"
 
-    teasertext = fields.Char('Short Description', translate=True, default='')
     typecode = fields.Char('Event Template', translate=False, default='')
     edit_mode = fields.Selection(
         string='Type',

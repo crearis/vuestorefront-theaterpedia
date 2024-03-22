@@ -265,17 +265,17 @@ class Post(OdooObjectType):
     is_published = graphene.Boolean()
     published_date = graphene.String()
     post_date = graphene.String()
+    sync_id = graphene.String()
     write_date = graphene.String()
     name = graphene.String()
     subtitle = graphene.String()
-    teasertext = graphene.String()
+    description = graphene.String()
     content = graphene.String()
     blocks = graphene.String()
     meta_title = graphene.String()
-    meta_keyword = graphene.String()
+    meta_keywords = graphene.String()
     meta_description = graphene.String()    
     seo_name = graphene.String()
-    last_update = graphene.String()
 
     def resolve_author(self, info):
         return self.author_id or None
@@ -285,9 +285,18 @@ class Post(OdooObjectType):
     
     def resolve_website(self, info):
         return self.website_id or None
+    
+    def resolve_description(self, info):
+        return self.description or None
 
-    def resolve_last_update(self, info):
-        return self.__last_update or None
+    def resolve_meta_title(self, info):
+        return self.website_meta_title or None
+
+    def resolve_meta_keywords(self, info):
+        return self.website_meta_keywords or None
+
+    def resolve_meta_description(self, info):
+        return self.website_meta_description or None    
 
 class Blog(OdooObjectType):
     id = graphene.Int(required=True)
@@ -295,12 +304,21 @@ class Blog(OdooObjectType):
     name = graphene.String()
     subtitle = graphene.String()    
     meta_title = graphene.String()
-    meta_keyword = graphene.String()
+    meta_keywords = graphene.String()
     meta_description = graphene.String()    
     seo_name = graphene.String()    
 
     def resolve_website(self, info):
         return self.website_id or None
+    
+    def resolve_meta_title(self, info):
+        return self.website_meta_title or None
+
+    def resolve_meta_keywords(self, info):
+        return self.website_meta_keywords or None
+
+    def resolve_meta_description(self, info):
+        return self.website_meta_description or None    
 
 class Category(OdooObjectType):
     id = graphene.Int(required=True)
@@ -426,14 +444,15 @@ class Event(OdooObjectType):
     display_name = graphene.String()
     barcode = graphene.String()
     subtitle = graphene.String()
-    teasertext = graphene.String()
+    description = graphene.String()
     sync_id = graphene.String()
+    write_date = graphene.String()
     blocks = graphene.String()
     ticket_instructions = graphene.String()
     note = graphene.String()
     currency = graphene.Field(lambda: Currency)
     meta_title = graphene.String()
-    meta_keyword = graphene.String()
+    meta_keywords = graphene.String()
     meta_description = graphene.String()
     #TODO _05 Image via Product
     # image = graphene.String()
@@ -452,7 +471,6 @@ class Event(OdooObjectType):
     # is_in_wishlist = graphene.Boolean()
     #TODO _05 Specific for Event:Course/Sessions
     # qty = graphene.Float()
-    last_update = graphene.String()
     slug = graphene.String()
     #TODO _05 Templates, Variants, Attributes ...
     # alternative_products = graphene.List(graphene.NonNull(lambda: Product))
@@ -500,20 +518,18 @@ class Event(OdooObjectType):
         else:
             return 0
 
-    def resolve_teasertext(self, info):
+    def resolve_description(self, info):
         return self.description or None
 
     def resolve_meta_title(self, info):
         return self.website_meta_title or None
 
-    def resolve_meta_keyword(self, info):
+    def resolve_meta_keywords(self, info):
         return self.website_meta_keywords or None
 
     def resolve_meta_description(self, info):
         return self.website_meta_description or None
-
-    def resolve_last_update(self, info):
-        return self.__last_update or None    
+  
 
     """ 
     def resolve_image(self, info):

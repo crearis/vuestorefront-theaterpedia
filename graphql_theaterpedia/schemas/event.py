@@ -191,7 +191,7 @@ class UpdateEventInput(graphene.InputObjectType):
     blocks = graphene.String()
     note = graphene.String()
     meta_title = graphene.String()
-    meta_keyword = graphene.String()
+    meta_keywords = graphene.String()
     meta_description = graphene.String()    
 
 class UpdateSyncIdInput(graphene.InputObjectType):
@@ -223,7 +223,7 @@ class UpdateEvent(graphene.Mutation):
             'subtitle': event.get('subtitle'),
             'description': event.get('description'),
             'meta_title': event.get('meta_title'),
-            'meta_keyword': event.get('meta_keyword'),
+            'meta_keywords': event.get('meta_keywords'),
             'meta_description': event.get('meta_description'),                        
         }
 
@@ -231,16 +231,16 @@ class UpdateEvent(graphene.Mutation):
             values.update({'name': event['name']})
         if event.get('note'):
             values.update({'note': event['note']})
-        if event.get('meta_title'):
-            values.update({'meta_title': event['meta_title']})
         if event.get('subtitle'):
             values.update({'subtitle': event['subtitle']})
         if event.get('description'):
             values.update({'description': event['description']})
         if event.get('blocks'):
             values.update({'blocks': event['blocks']}) 
-        if event.get('meta_keyword'):
-            values.update({'meta_keyword': event['meta_keyword']})               
+        if event.get('meta_title'):
+            values.update({'meta_title': event['meta_title']})            
+        if event.get('meta_keywords'):
+            values.update({'meta_keywords': event['meta_keywords']})               
         if event.get('meta_description'):
             values.update({'meta_description': event['meta_description']}) 
 
