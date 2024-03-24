@@ -29,7 +29,6 @@
         'event_registration_mass_mailing',
         'event_registration_partner_unique',
         'event_session',
-        'event_sale_session',
         'partner_event',
         'website_event_questions_by_ticket',
     ],
@@ -42,7 +41,8 @@
         'views/product_views.xml',
         'views/website_views.xml',
         'views/res_config_settings_views.xml',
-        'views/website_pages_views.xml'
+        'views/website_pages_views.xml',
+        'views/event_event_views.xml',
     ],
     'demo': [
         'data/demo_product_attribute.xml',

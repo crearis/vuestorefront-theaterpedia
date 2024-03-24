@@ -22,6 +22,7 @@ class EventEvent(models.Model):
     _inherit = "event.event"
 
     typecode = fields.Char('Event Template', translate=False, default='')
+    teasertext = fields.Char('Teasertext', translate=True, default='')
     edit_mode = fields.Selection(
         string='Type',
         selection=[('locked', 'Locked'), ('blocks', 'edit blocks'), ('content', 'edit content'), ('full', 'edit all')],

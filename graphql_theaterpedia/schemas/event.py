@@ -186,7 +186,9 @@ class EventQuery(graphene.ObjectType):
 class UpdateEventInput(graphene.InputObjectType):
     id = graphene.Int(required=True)
     name = graphene.String()
-    subtitle = graphene.String()
+    overline = graphene.String()
+    typecode = graphene.String()
+    teasertext = graphene.String()
     description = graphene.String()
     blocks = graphene.String()
     note = graphene.String()
@@ -224,8 +226,12 @@ class UpdateEvent(graphene.Mutation):
             values.update({'name': event['name']})
         if event.get('note'):
             values.update({'note': event['note']})
-        if event.get('subtitle'):
-            values.update({'subtitle': event['subtitle']})
+        if event.get('overline'):
+            values.update({'subtitle': event['overline']})
+        if event.get('teasertext'):
+            values.update({'teasertext': event['teasertext']})        
+        if event.get('typecode'):
+            values.update({'typecode': event['typecode']})
         if event.get('description'):
             values.update({'description': event['description']})
         if event.get('blocks'):

@@ -432,6 +432,10 @@ class EventStage(OdooObjectType):
 
 class Event(OdooObjectType):
     id = graphene.Int(required=True)
+    name = graphene.String()
+    headline = graphene.String()
+    overline = graphene.String()  
+    typecode = graphene.String()
     public_user = graphene.Field(lambda: User)
     company = graphene.Field(lambda: Partner)
     organizer = graphene.Field(lambda: Partner)
@@ -440,10 +444,8 @@ class Event(OdooObjectType):
     edit_mode = EventEditMode()
     stage = graphene.Field(lambda: EventStage)
     visibility = graphene.Int()
-    name = graphene.String()
-    display_name = graphene.String()
     barcode = graphene.String()
-    subtitle = graphene.String()
+    teasertext = graphene.String()
     description = graphene.String()
     sync_id = graphene.String()
     write_date = graphene.String()
@@ -494,6 +496,9 @@ class Event(OdooObjectType):
     # first_variant = graphene.Field((lambda: Product), description='Specific to use in Product Template')
     json_ld = generic.GenericScalar()
 
+    def resolve_typecode(self, info):
+        return self.typecode or None
+
     def resolve_public_user(self, info):
         return self.user_id or None
 
@@ -517,6 +522,15 @@ class Event(OdooObjectType):
             return 1
         else:
             return 0
+
+    def resolve_headline(self, info):
+        return self.display_name or None
+
+    def resolve_overline(self, info):
+        return self.subtitle or None
+    
+    def resolve_teasertext(self, info):
+        return self.teasertext or None
 
     def resolve_description(self, info):
         return self.description or None
