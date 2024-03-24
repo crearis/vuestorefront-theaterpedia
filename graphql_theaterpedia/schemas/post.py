@@ -4,10 +4,22 @@
 
 import graphene
 from odoo.http import request
-
+from graphql import GraphQLError
+from odoo import _
 from odoo.addons.graphql_theaterpedia.schemas.objects import (
-    Post
+    SortEnum, Post, Blog
 )
+
+def get_post(env, post_id):
+    BlogPost = env['blog.post'].with_context().sudo()
+    post = BlogPost.browse(post_id)
+
+    #TODO _07 check_access_rights('read') for post
+    # Validate if the blog-post exists and if the user has access to this address
+    if not post or not post.exists():
+        raise GraphQLError(_('BlogPost not found.'))
+
+    return post
 
 def get_search_order(sort):
     sorting = ''
@@ -16,15 +28,18 @@ def get_search_order(sort):
             sorting += ', '
         sorting += '%s %s' % (field, val.value)
 
-    if not sorting:
-        sorting = 'sequence ASC, id ASC'
-
     return sorting
+    
+class PostFilterInput(graphene.InputObjectType):
+    blogs = graphene.List(graphene.Int)
+    is_published = graphene.Boolean()
 
 class Posts(graphene.Interface):
     posts = graphene.List(Post)
     total_count = graphene.Int(required=True)
 
+class PostSortInput(graphene.InputObjectType):
+    id = SortEnum()
 
 class PostList(graphene.ObjectType):
     class Meta:
@@ -39,9 +54,11 @@ class PostQuery(graphene.ObjectType):
     )
     posts = graphene.Field(
         Posts,
+        filter=graphene.Argument(PostFilterInput, default_value={}),
         current_page=graphene.Int(default_value=1),
-        page_size=graphene.Int(default_value=20),
+        page_size=graphene.Int(default_value=10),
         search=graphene.String(default_value=False),
+        sort=graphene.Argument(PostSortInput, default_value={})        
     )
 
     @staticmethod
@@ -65,9 +82,19 @@ class PostQuery(graphene.ObjectType):
         return post             
 
     @staticmethod
-    def resolve_posts(self, info, current_page, page_size, search):
+    def resolve_posts(self, info, filter, current_page, page_size, sort, search):
         env = info.context["env"]
         domain = env['website'].get_current_website().website_domain()
+        order = get_search_order(sort)
+
+        # Filter by blogs or default to all
+        if filter.get('blogs', False):
+            blog_ids = [blog_id for blog_id in filter['blogs']]
+            domain += [('blog_id', 'in', blog_ids)]
+
+        # Filter by is_published
+        if filter.get('is_published', False):
+            domain += [('is_published', '=', 'true')]
 
         if search:
             for srch in search.split(" "):
@@ -79,6 +106,136 @@ class PostQuery(graphene.ObjectType):
         else:
             offset = 0
 
-        posts = Posts.search(
-            domain, limit=page_size, offset=offset)
-        return PostList(posts=posts, total_count=10)
+        BlogPosts = env["blog.post"]
+        total_count = BlogPosts.search_count(domain)
+        posts = BlogPosts.search(
+            domain, limit=page_size, offset=offset, order=order)
+        return PostList(posts=posts, total_count=total_count)
+    
+class AddBlogPostInput(graphene.InputObjectType):
+    name = graphene.String(required=True)
+    """ partner-id """
+    author_id = graphene.Int(required=True)
+    blog_id = graphene.Int()
+    subtitle = graphene.String()
+    description = graphene.String()
+    blocks = graphene.String()
+    meta_title = graphene.String()
+    meta_keywords = graphene.String()
+    meta_description = graphene.String()    
+
+class UpdatePostInput(graphene.InputObjectType):
+    id = graphene.Int(required=True)
+    name = graphene.String()
+    """ partner-id """
+    author_id = graphene.Int()
+    subtitle = graphene.String()
+    description = graphene.String()
+    blocks = graphene.String()
+    meta_title = graphene.String()
+    meta_keywords = graphene.String()
+    meta_description = graphene.String()
+
+class UpdateSyncIdInput(graphene.InputObjectType):
+    id = graphene.Int(required=True)
+    sync_id = graphene.Int()
+
+class AddPost(graphene.Mutation):
+    class Arguments:
+        post = AddBlogPostInput()
+
+    Output = Post
+
+    @staticmethod
+    def mutate(self, info, post):
+        env = info.context["env"]
+        BlogPost = env['blog.post'].sudo().with_context(tracking_disable=True)
+
+        values = {
+            'name': post.get('name'),
+            'author_id': post.get('author_id'),
+            'blog_id': post.get('blog_id'),
+            'subtitle': post.get('subtitle'),
+            'description': post.get('description'),
+            'blocks': post.get('blocks'),
+            'website_meta_title': post.get('meta_title'),
+            'website_meta_keywords': post.get('meta_keywords'),
+            'website_meta_description': post.get('meta_description'),               
+        }
+
+        # Create post entry
+        post = BlogPost.create(values)
+
+        return post
+    
+class UpdatePost(graphene.Mutation):
+    class Arguments:
+        post = UpdatePostInput(required=True)
+
+    Output = Post
+
+    @staticmethod
+    def mutate(self, info, post):
+        env = info.context["env"]
+        BlogPost = get_post(env, post['id'])
+
+        values = {
+            'name': post.get('name'),
+            'author_id': post.get('author_id'),
+            'subtitle': post.get('subtitle'),
+            'description': post.get('description'),
+            'blocks': post.get('blocks'),
+            'website_meta_title': post.get('meta_title'),
+            'website_meta_keywords': post.get('meta_keywords'),
+            'website_meta_description': post.get('meta_description'),            
+        }
+
+        if post.get('name'):
+            values.update({'name': post['name']})
+        if post.get('author_id'):
+            values.update({'author_id': post['author_id']})
+        if post.get('subtitle'):
+            values.update({'subtitle': post['subtitle']})
+        if post.get('description'):
+            values.update({'description': post['description']})
+        if post.get('blocks'):
+            values.update({'blocks': post['blocks']})
+        if post.get('meta_title'):
+            values.update({'website_meta_title': post['meta_title']})            
+        if post.get('meta_keywords'):
+            values.update({'website_meta_keywords': post['meta_keywords']})               
+        if post.get('meta_description'):
+            values.update({'website_meta_description': post['meta_description']})                 
+
+        if values:
+            BlogPost.write(values)
+
+        return BlogPost
+    
+class UpdateSyncId(graphene.Mutation):
+    class Arguments:
+        post = UpdateSyncIdInput(required=True)
+
+    Output = Post
+
+    @staticmethod
+    def mutate(self, info, post):
+        env = info.context["env"]
+        BlogPost = get_post(env, post['id'])
+
+        values = {
+            'sync_id': post.get('sync_id'),
+        }
+
+        if post.get('sync_id'):
+            values.update({'sync_id': post['sync_id']})  
+
+        if values:
+            BlogPost.write(values)        
+
+        return BlogPost
+    
+class BlogPostMutation(graphene.ObjectType):
+    add_post = AddPost.Field(description='Add new blogpost and make it active.')
+    update_sync_id = UpdateSyncId.Field(description="Update the SyncId of a blogpost.")
+    update_post = UpdatePost.Field(description="Update a blogpost and make it active.")

@@ -30,6 +30,11 @@ FilterVisibility = graphene.Enum('FilterVisibility', [('Visible', 'visible'), ('
 OrderStage = graphene.Enum('OrderStage', [('Quotation', 'draft'), ('QuotationSent', 'sent'),
                                           ('SalesOrder', 'sale'), ('Locked', 'done'), ('Cancelled', 'cancel')])
 
+EventTypeEnum = graphene.Enum('EventTypeEnum', [('OnlineVerkauf', 1), ('Konferenz', 2), 
+                                          ('Ausstellung', 3), ('Training', 4), ('Sport', 5), ('Theater', 6)])
+
+EventEditMode = graphene.Enum('EventEditMode', [('locked', 'gesperrt'), ('blocks', 'Blocks ändern'), ('content', 'Content ändern'), ('full', 'voll änderbar')])
+
 InvoiceStatus = graphene.Enum('InvoiceStatus', [('UpsellingOpportunity', 'upselling'), ('FullyInvoiced', 'invoiced'),
                                                 ('ToInvoice', 'to invoice'), ('NothingtoInvoice', 'no')])
 
@@ -253,23 +258,67 @@ class Currency(OdooObjectType):
 
 class Post(OdooObjectType):
     id = graphene.Int(required=True)
+    author = graphene.Field(lambda: Partner)    
     blog = graphene.Field(lambda: Blog)
     website = graphene.Field(lambda: Website)
+    visits = graphene.Int()
+    is_published = graphene.Boolean()
+    published_date = graphene.String()
+    post_date = graphene.String()
+    sync_id = graphene.String()
+    write_date = graphene.String()
     name = graphene.String()
+    subtitle = graphene.String()
+    description = graphene.String()
+    content = graphene.String()
+    blocks = graphene.String()
+    meta_title = graphene.String()
+    meta_keywords = graphene.String()
+    meta_description = graphene.String()    
+    seo_name = graphene.String()
+
+    def resolve_author(self, info):
+        return self.author_id or None
 
     def resolve_blog(self, info):
-        return self.blog_id.name or None
+        return self.blog_id or None
     
     def resolve_website(self, info):
-        return self.website_id.name or None
+        return self.website_id or None
+    
+    def resolve_description(self, info):
+        return self.description or None
+
+    def resolve_meta_title(self, info):
+        return self.website_meta_title or None
+
+    def resolve_meta_keywords(self, info):
+        return self.website_meta_keywords or None
+
+    def resolve_meta_description(self, info):
+        return self.website_meta_description or None    
 
 class Blog(OdooObjectType):
     id = graphene.Int(required=True)
     website = graphene.Field(lambda: Website)
     name = graphene.String()
+    subtitle = graphene.String()    
+    meta_title = graphene.String()
+    meta_keywords = graphene.String()
+    meta_description = graphene.String()    
+    seo_name = graphene.String()    
 
     def resolve_website(self, info):
-        return self.website_id.name or None
+        return self.website_id or None
+    
+    def resolve_meta_title(self, info):
+        return self.website_meta_title or None
+
+    def resolve_meta_keywords(self, info):
+        return self.website_meta_keywords or None
+
+    def resolve_meta_description(self, info):
+        return self.website_meta_description or None    
 
 class Category(OdooObjectType):
     id = graphene.Int(required=True)
@@ -362,6 +411,246 @@ class Ribbon(OdooObjectType):
     html_class = graphene.String()
     bg_color = graphene.String()
     display_name = graphene.String()
+
+
+class EventType(OdooObjectType):
+    id = graphene.Int(required=True)
+    name = graphene.String()
+    ticket_instructions = graphene.String()
+    note = graphene.String()
+    use_sessions = graphene.Boolean()
+    seats_max = graphene.Int()
+    seats_max = graphene.Int()
+
+class EventStage(OdooObjectType):
+    id = graphene.Int(required=True)
+    name = graphene.String()
+    description = graphene.String()
+    legend_blocked = graphene.String()
+    legend_done = graphene.String()
+    legend_normal = graphene.String()
+
+class Event(OdooObjectType):
+    id = graphene.Int(required=True)
+    name = graphene.String()
+    headline = graphene.String()
+    overline = graphene.String()  
+    typecode = graphene.String()
+    public_user = graphene.Field(lambda: User)
+    company = graphene.Field(lambda: Partner)
+    organizer = graphene.Field(lambda: Partner)
+    address = graphene.Field(lambda: Partner)    
+    event_type = graphene.Field(lambda: EventType)
+    edit_mode = EventEditMode()
+    stage = graphene.Field(lambda: EventStage)
+    visibility = graphene.Int()
+    barcode = graphene.String()
+    teasertext = graphene.String()
+    description = graphene.String()
+    sync_id = graphene.String()
+    write_date = graphene.String()
+    blocks = graphene.String()
+    ticket_instructions = graphene.String()
+    note = graphene.String()
+    currency = graphene.Field(lambda: Currency)
+    meta_title = graphene.String()
+    meta_keywords = graphene.String()
+    meta_description = graphene.String()
+    #TODO _05 Image via Product
+    # image = graphene.String()
+    # small_image = graphene.String()
+    # image_filename = graphene.String()
+    # thumbnail = graphene.String()
+    # media_gallery = graphene.List(graphene.NonNull(lambda: ProductImage))
+    categories = graphene.List(graphene.NonNull(lambda: Category))
+    # allow_out_of_stock = graphene.Boolean()
+    # show_available_qty = graphene.Boolean()
+    # out_of_stock_message = graphene.String()
+    seats_limited = graphene.Boolean()
+    date_begin = graphene.String()
+    date_end = graphene.String()
+    event_mail_template_id = graphene.String()
+    # is_in_wishlist = graphene.Boolean()
+    #TODO _05 Specific for Event:Course/Sessions
+    # qty = graphene.Float()
+    slug = graphene.String()
+    #TODO _05 Templates, Variants, Attributes ...
+    # alternative_products = graphene.List(graphene.NonNull(lambda: Product))
+    # accessory_products = graphene.List(graphene.NonNull(lambda: Product))
+    # Specific to use in Product Variant
+    # combination_info_variant = generic.GenericScalar(description='Specific to Product Variant')
+    # variant_price = graphene.Float(description='Specific to Product Variant')
+    # variant_price_after_discount = graphene.Float(description='Specific to Product Variant')
+    # variant_has_discounted_price = graphene.Boolean(description='Specific to Product Variant')
+    # is_variant_possible = graphene.Boolean(description='Specific to Product Variant')
+    # variant_attribute_values = graphene.List(graphene.NonNull(lambda: AttributeValue),
+    #                                         description='Specific to Product Variant')
+    
+    # product_template = graphene.Field((lambda: Event), description='Specific to Product Variant')
+    # Specific to use in Product Template
+    # combination_info = generic.GenericScalar(description='Specific to Product Template')
+    # price = graphene.Float(description='Specific to Product Template')
+    # attribute_values = graphene.List(graphene.NonNull(lambda: AttributeValue),
+    #                                 description='Specific to Product Template')
+    # product_variants = graphene.List(graphene.NonNull(lambda: Product), description='Specific to Product Template')
+    # first_variant = graphene.Field((lambda: Product), description='Specific to use in Product Template')
+    json_ld = generic.GenericScalar()
+
+    def resolve_typecode(self, info):
+        return self.typecode or None
+
+    def resolve_public_user(self, info):
+        return self.user_id or None
+
+    def resolve_company(self, info):
+        return self.company_id or None    
+
+    def resolve_organizer(self, info):
+        return self.organizer_id or None   
+
+    def resolve_address(self, info):
+        return self.address_id or None 
+
+    def resolve_event_type(self, info):
+        return self.event_type_id or None 
+
+    def resolve_stage(self, info):
+        return self.stage_id or None 
+
+    def resolve_visibility(self, info):
+        if self.website_published:
+            return 1
+        else:
+            return 0
+
+    def resolve_headline(self, info):
+        return self.display_name or None
+
+    def resolve_overline(self, info):
+        return self.subtitle or None
+    
+    def resolve_teasertext(self, info):
+        return self.teasertext or None
+
+    def resolve_description(self, info):
+        return self.description or None
+
+    def resolve_meta_title(self, info):
+        return self.website_meta_title or None
+
+    def resolve_meta_keywords(self, info):
+        return self.website_meta_keywords or None
+
+    def resolve_meta_description(self, info):
+        return self.website_meta_description or None
+  
+
+    """ 
+    def resolve_image(self, info):
+        return '/web/image/{}/{}/image_1920'.format(self._name, self.id)
+
+    def resolve_small_image(self, info):
+        return '/web/image/{}/{}/image_128'.format(self._name, self.id)
+
+    def resolve_image_filename(self, info):
+        return slugify(self.name)
+
+    def resolve_thumbnail(self, info):
+        return '/web/image/{}/{}/image_512'.format(self._name, self.id)
+
+    def resolve_categories(self, info):
+        website = self.env['website'].get_current_website()
+        if website:
+            return self.public_categ_ids.filtered(
+                lambda c: not c.website_id or c.website_id and c.website_id.id == website.id) or None
+        return self.public_categ_ids or None
+
+    def resolve_allow_out_of_stock(self, info):
+        return self.allow_out_of_stock_order or None
+
+    def resolve_show_available_qty(self, info):
+        return self.show_availability or None
+
+    def resolve_ribbon(self, info):
+        return self.website_ribbon_id or None
+
+    def resolve_is_in_stock(self, info):
+        return bool(self.free_qty > 0)
+
+    def resolve_is_in_wishlist(self, info):
+        env = info.context["env"]
+        is_in_wishlist = product_is_in_wishlist(env, self)
+        return bool(is_in_wishlist)
+
+    def resolve_media_gallery(self, info):
+        if self._name == 'product.template':
+            return self.product_template_image_ids or None
+        else:
+            return self.product_template_image_ids + self.product_variant_image_ids or None
+
+    def resolve_qty(self, info):
+        return self.free_qty """
+
+    def resolve_slug(self, info):
+        return self.website_slug
+
+    """ def resolve_alternative_products(self, info):
+        return self.alternative_product_ids or None
+
+    def resolve_accessory_products(self, info):
+        return self.accessory_product_ids or None
+
+    # Specific to use in Product Variant
+    def resolve_combination_info_variant(self, info):
+        env = info.context["env"]
+        pricing_info = get_product_pricing_info(env, self)
+        return pricing_info or None
+
+    def resolve_variant_price(self, info):
+        env = info.context["env"]
+        pricing_info = get_product_pricing_info(env, self)
+        return pricing_info['list_price'] or None
+
+    def resolve_variant_price_after_discount(self, info):
+        env = info.context["env"]
+        pricing_info = get_product_pricing_info(env, self)
+        return pricing_info['price'] or None
+
+    def resolve_variant_has_discounted_price(self, info):
+        env = info.context["env"]
+        pricing_info = get_product_pricing_info(env, self)
+        return pricing_info['has_discounted_price']
+
+    def resolve_is_variant_possible(self, info):
+        return self._is_variant_possible()
+
+    def resolve_variant_attribute_values(self, info):
+        return self.product_template_attribute_value_ids or None
+
+    def resolve_product_template(self, info):
+        return self.product_tmpl_id or None
+
+    # Specific to use in Product Template
+    def resolve_combination_info(self, info):
+        env = info.context["env"]
+        pricing_info = get_product_pricing_info(env, self.product_variant_id)
+        return pricing_info or None
+
+    def resolve_price(self, info):
+        return self.list_price or None
+
+    def resolve_attribute_values(self, info):
+        return self.attribute_line_ids.product_template_value_ids or None
+
+    def resolve_product_variants(self, info):
+        return self.product_variant_ids or None
+
+    def resolve_first_variant(self, info):
+        return self.product_variant_id or None """
+
+    def resolve_json_ld(self, info):
+        return self and self.get_json_ld() or None
+
 
 
 class Product(OdooObjectType):
