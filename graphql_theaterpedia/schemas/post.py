@@ -183,7 +183,7 @@ class UpdatePost(graphene.Mutation):
             'name': post.get('name'),
             'author_id': post.get('author_id'),
             'subtitle': post.get('subtitle'),
-            'teasertext': post.get('teasertext'),
+            'description': post.get('teasertext'),
             'blocks': post.get('blocks'),
             'website_meta_title': post.get('meta_title'),
             'website_meta_keywords': post.get('meta_keywords'),
