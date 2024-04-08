@@ -269,7 +269,7 @@ class Post(OdooObjectType):
     write_date = graphene.String()
     name = graphene.String()
     subtitle = graphene.String()
-    description = graphene.String()
+    teasertext = graphene.String()
     content = graphene.String()
     blocks = graphene.String()
     meta_title = graphene.String()
@@ -286,7 +286,7 @@ class Post(OdooObjectType):
     def resolve_website(self, info):
         return self.website_id or None
     
-    def resolve_description(self, info):
+    def resolve_teasertext(self, info):
         return self.description or None
 
     def resolve_meta_title(self, info):
