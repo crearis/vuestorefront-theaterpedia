@@ -212,7 +212,7 @@ class UpdatePost(graphene.Mutation):
 
         return BlogPost
     
-class UpdateSyncId(graphene.Mutation):
+class UpdatePostSyncId(graphene.Mutation):
     class Arguments:
         post = UpdateSyncIdInput(required=True)
 
@@ -237,5 +237,5 @@ class UpdateSyncId(graphene.Mutation):
     
 class BlogPostMutation(graphene.ObjectType):
     add_post = AddPost.Field(description='Add new blogpost and make it active.')
-    update_sync_id = UpdateSyncId.Field(description="Update the SyncId of a blogpost.")
+    update_post_sync_id = UpdatePostSyncId.Field(description="Update the SyncId of a blogpost.")
     update_post = UpdatePost.Field(description="Update a blogpost and make it active.")
