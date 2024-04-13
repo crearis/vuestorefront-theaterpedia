@@ -24,4 +24,12 @@ class BlogPost(models.Model):
     description = fields.Char('Teasertext', translate=True, default='')
     blocks = JsonField('Pruvious Blocks', required=False, default="'{}'")   # a json object represented as dict / list / python primitives, see: https://gist.github.com/danmana/5242f37b7d63daf4698de7c61c8b59fc
     sync_id = fields.Char('Sync Id', translate=False, default='')
+    # homesite_id = fields.Integer('Homesite', default=4)
+    homesite_id = fields.Many2one(
+        "website",
+        string="Homesite",
+        ondelete="restrict",
+        help="Editing only allowed from this website.",
+        index=True,
+    )
     

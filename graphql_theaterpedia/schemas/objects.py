@@ -261,6 +261,7 @@ class Post(OdooObjectType):
     author = graphene.Field(lambda: Partner)    
     blog = graphene.Field(lambda: Blog)
     website = graphene.Field(lambda: Website)
+    homesite = graphene.Field(lambda: Website)
     visits = graphene.Int()
     is_published = graphene.Boolean()
     published_date = graphene.String()
@@ -285,6 +286,9 @@ class Post(OdooObjectType):
     
     def resolve_website(self, info):
         return self.website_id or None
+
+    def resolve_homesite(self, info):
+        return self.homesite_id or None
     
     def resolve_teasertext(self, info):
         return self.description or None
@@ -1159,8 +1163,12 @@ class MailingContact(OdooObjectType):
 class Website(OdooObjectType):
     id = graphene.Int()
     name = graphene.String()
+    domain = graphene.String()
     company = graphene.Field(lambda: Company)
     public_user = graphene.Field(lambda: User)
+
+    def resolve_domain(self, info):
+        return self.domain or None
 
     def resolve_company(self, info):
         return self.company_id or None
