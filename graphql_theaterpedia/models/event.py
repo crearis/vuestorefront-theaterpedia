@@ -21,7 +21,7 @@ class JsonField(fields.Field):
 class EventEvent(models.Model):
     _inherit = "event.event"
 
-    typecode = fields.Char('Event Template', translate=False, default='')
+    template_code = fields.Char('Event Template', translate=False, default='')
     teasertext = fields.Char('Teasertext', translate=True, default='')
     edit_mode = fields.Selection(
         string='Type',
@@ -29,4 +29,3 @@ class EventEvent(models.Model):
         help="Type is used to control the dashboard-editing of the event.",
         default='content')
     blocks = JsonField('Pruvious Blocks', required=False, default="'{}'")   # a json object represented as dict / list / python primitives, see: https://gist.github.com/danmana/5242f37b7d63daf4698de7c61c8b59fc
-    sync_id = fields.Char('Sync Id', translate=False, default='')

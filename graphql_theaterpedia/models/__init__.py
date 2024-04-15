@@ -5,6 +5,7 @@
 from . import invalidate_cache
 from . import ir_binary
 from . import website
+from . import blog
 from . import episode
 from . import event
 from . import product

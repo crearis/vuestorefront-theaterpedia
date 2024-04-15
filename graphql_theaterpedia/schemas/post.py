@@ -84,7 +84,7 @@ class PostQuery(graphene.ObjectType):
     @staticmethod
     def resolve_posts(self, info, filter, current_page, page_size, sort, search):
         env = info.context["env"]
-        domain = env['website'].get_current_website().website_domain()
+        domain = [] # env['website'].get_current_website().website_domain()
         order = get_search_order(sort)
 
         # Filter by blogs or default to all
@@ -126,19 +126,15 @@ class AddBlogPostInput(graphene.InputObjectType):
 
 class UpdatePostInput(graphene.InputObjectType):
     id = graphene.Int(required=True)
-    name = graphene.String()
+    headline = graphene.String()
     """ partner-id """
     author_id = graphene.Int()
-    subtitle = graphene.String()
+    overline = graphene.String()
     teasertext = graphene.String()
     blocks = graphene.String()
     meta_title = graphene.String()
     meta_keywords = graphene.String()
     meta_description = graphene.String()
-
-class UpdateSyncIdInput(graphene.InputObjectType):
-    id = graphene.Int(required=True)
-    sync_id = graphene.Int()
 
 class AddPost(graphene.Mutation):
     class Arguments:
@@ -152,10 +148,10 @@ class AddPost(graphene.Mutation):
         BlogPost = env['blog.post'].sudo().with_context(tracking_disable=True)
 
         values = {
-            'name': post.get('name'),
+            'name': post.get('headline'),
             'author_id': post.get('author_id'),
             'blog_id': post.get('blog_id'),
-            'subtitle': post.get('subtitle'),
+            'subtitle': post.get('overline'),
             'description': post.get('teasertext'),
             'blocks': post.get('blocks'),
             'website_meta_title': post.get('meta_title'),
@@ -180,9 +176,9 @@ class UpdatePost(graphene.Mutation):
         BlogPost = get_post(env, post['id'])
 
         values = {
-            'name': post.get('name'),
+            'name': post.get('headline'),
             'author_id': post.get('author_id'),
-            'subtitle': post.get('subtitle'),
+            'subtitle': post.get('overline'),
             'description': post.get('teasertext'),
             'blocks': post.get('blocks'),
             'website_meta_title': post.get('meta_title'),
@@ -190,12 +186,12 @@ class UpdatePost(graphene.Mutation):
             'website_meta_description': post.get('meta_description'),            
         }
 
-        if post.get('name'):
-            values.update({'name': post['name']})
+        if post.get('headline'):
+            values.update({'name': post['headline']})
         if post.get('author_id'):
             values.update({'author_id': post['author_id']})
-        if post.get('subtitle'):
-            values.update({'subtitle': post['subtitle']})
+        if post.get('overline'):
+            values.update({'subtitle': post['overline']})
         if post.get('teasertext'):
             values.update({'description': post['teasertext']})
         if post.get('blocks'):
@@ -212,30 +208,6 @@ class UpdatePost(graphene.Mutation):
 
         return BlogPost
     
-class UpdatePostSyncId(graphene.Mutation):
-    class Arguments:
-        post = UpdateSyncIdInput(required=True)
-
-    Output = Post
-
-    @staticmethod
-    def mutate(self, info, post):
-        env = info.context["env"]
-        BlogPost = get_post(env, post['id'])
-
-        values = {
-            'sync_id': post.get('sync_id'),
-        }
-
-        if post.get('sync_id'):
-            values.update({'sync_id': post['sync_id']})  
-
-        if values:
-            BlogPost.write(values)        
-
-        return BlogPost
-    
 class BlogPostMutation(graphene.ObjectType):
     add_post = AddPost.Field(description='Add new blogpost and make it active.')
-    update_post_sync_id = UpdatePostSyncId.Field(description="Update the SyncId of a blogpost.")
     update_post = UpdatePost.Field(description="Update a blogpost and make it active.")

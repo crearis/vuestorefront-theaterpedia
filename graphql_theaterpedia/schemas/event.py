@@ -44,7 +44,12 @@ def get_search_order(sort):
     return sorting
 
 def get_search_domain(env, search, **kwargs):
-    domains = [env['website'].get_current_website().website_domain()]
+    domains = []
+    
+    # Filter if homesite_only=true
+    if kwargs.get('homesite_only', False):
+        if kwargs['homesite_only']:
+            domains.append(env['website'].get_current_website().website_domain())
 
     # Filter with ids
     if kwargs.get('ids', False):
@@ -126,6 +131,7 @@ class EventSortInput(graphene.InputObjectType):
 class EventFilterInput(graphene.InputObjectType):
     ids = graphene.List(graphene.Int)
     published = graphene.Boolean()
+    homesite_only = graphene.Boolean()
     event_type = graphene.Int()
     edit_mode = graphene.List(EventEditMode)
     address_id = graphene.List(graphene.Int)
@@ -187,7 +193,7 @@ class UpdateEventInput(graphene.InputObjectType):
     id = graphene.Int(required=True)
     name = graphene.String()
     overline = graphene.String()
-    typecode = graphene.String()
+    template_code = graphene.String()
     teasertext = graphene.String()
     description = graphene.String()
     blocks = graphene.String()
@@ -196,11 +202,6 @@ class UpdateEventInput(graphene.InputObjectType):
     meta_keywords = graphene.String()
     meta_description = graphene.String()
 
-class UpdateSyncIdInput(graphene.InputObjectType):
-    id = graphene.Int(required=True)
-    sync_id = graphene.Int()
-
-    
 class UpdateEvent(graphene.Mutation):
     class Arguments:
         event = UpdateEventInput(required=True)
@@ -215,8 +216,11 @@ class UpdateEvent(graphene.Mutation):
         values = {
             'name': event.get('name'),
             'note': event.get('note'),
-            'subtitle': event.get('subtitle'),
+            'subtitle': event.get('overline'),
             'description': event.get('description'),
+            'teasertext': event.get('teasertext'),
+            'template_code': event.get('template_code'),
+            'blocks': event.get('blocks'),
             'website_meta_title': event.get('meta_title'),
             'website_meta_keywords': event.get('meta_keywords'),
             'website_meta_description': event.get('meta_description'),                        
@@ -230,8 +234,8 @@ class UpdateEvent(graphene.Mutation):
             values.update({'subtitle': event['overline']})
         if event.get('teasertext'):
             values.update({'teasertext': event['teasertext']})        
-        if event.get('typecode'):
-            values.update({'typecode': event['typecode']})
+        if event.get('template_code'):
+            values.update({'template_code': event['template_code']})
         if event.get('description'):
             values.update({'description': event['description']})
         if event.get('blocks'):
@@ -248,29 +252,5 @@ class UpdateEvent(graphene.Mutation):
 
         return EventEvent
     
-class UpdateSyncId(graphene.Mutation):
-    class Arguments:
-        event = UpdateSyncIdInput(required=True)
-
-    Output = Event
-
-    @staticmethod
-    def mutate(self, info, event):
-        env = info.context["env"]
-        EventEvent = get_event(env, event['id'])
-
-        values = {
-            'sync_id': event.get('sync_id'),
-        }
-
-        if event.get('sync_id'):
-            values.update({'sync_id': event['sync_id']})  
-
-        if values:
-            EventEvent.write(values)        
-
-        return EventEvent
-    
 class EventMutation(graphene.ObjectType):
-    update_sync_id = UpdateSyncId.Field(description="Update the SyncId of an Event.")
     update_event = UpdateEvent.Field(description="Update event content.")

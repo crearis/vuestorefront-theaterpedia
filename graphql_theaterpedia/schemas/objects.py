@@ -258,18 +258,21 @@ class Currency(OdooObjectType):
 
 class Post(OdooObjectType):
     id = graphene.Int(required=True)
+    version = graphene.Int()
     author = graphene.Field(lambda: Partner)    
     blog = graphene.Field(lambda: Blog)
     website = graphene.Field(lambda: Website)
     homesite = graphene.Field(lambda: Website)
+    domain_code = graphene.String()
+    sync_id = graphene.String()
     visits = graphene.Int()
     is_published = graphene.Boolean()
     published_date = graphene.String()
     post_date = graphene.String()
     sync_id = graphene.String()
     write_date = graphene.String()
-    name = graphene.String()
-    subtitle = graphene.String()
+    headline = graphene.String()
+    overline = graphene.String()
     teasertext = graphene.String()
     content = graphene.String()
     blocks = graphene.String()
@@ -281,6 +284,9 @@ class Post(OdooObjectType):
     def resolve_author(self, info):
         return self.author_id or None
 
+    def resolve_version(self, info):
+        return 1
+
     def resolve_blog(self, info):
         return self.blog_id or None
     
@@ -289,7 +295,21 @@ class Post(OdooObjectType):
 
     def resolve_homesite(self, info):
         return self.homesite_id or None
-    
+
+    def resolve_sync_id(self, info):
+        domain_code = self.homesite_id.domain_code
+        template_code = self.blog_id.template_code
+        if template_code == '':
+            template_code = 'blog'
+        odoo_post_id = self.id
+        return '{}.post-{}.{}'.format(domain_code,template_code,odoo_post_id) or None        
+
+    def resolve_headline(self, info):
+        return self.name or None
+
+    def resolve_overline(self, info):
+        return self.subtitle or None
+
     def resolve_teasertext(self, info):
         return self.description or None
 
@@ -306,6 +326,7 @@ class Blog(OdooObjectType):
     id = graphene.Int(required=True)
     website = graphene.Field(lambda: Website)
     name = graphene.String()
+    template_code = graphene.String()
     subtitle = graphene.String()    
     meta_title = graphene.String()
     meta_keywords = graphene.String()
@@ -314,7 +335,10 @@ class Blog(OdooObjectType):
 
     def resolve_website(self, info):
         return self.website_id or None
-    
+
+    def resolve_meta_title(self, info):
+        return self.template_code or 'blog'
+
     def resolve_meta_title(self, info):
         return self.website_meta_title or None
 
@@ -436,14 +460,17 @@ class EventStage(OdooObjectType):
 
 class Event(OdooObjectType):
     id = graphene.Int(required=True)
+    sync_id = graphene.String()
+    version = graphene.Int()
+    template_code = graphene.String()
     name = graphene.String()
     headline = graphene.String()
     overline = graphene.String()  
-    typecode = graphene.String()
     public_user = graphene.Field(lambda: User)
     company = graphene.Field(lambda: Partner)
+    website = graphene.Field(lambda: Website)
     organizer = graphene.Field(lambda: Partner)
-    address = graphene.Field(lambda: Partner)    
+    location = graphene.Field(lambda: Partner)    
     event_type = graphene.Field(lambda: EventType)
     edit_mode = EventEditMode()
     stage = graphene.Field(lambda: EventStage)
@@ -466,7 +493,6 @@ class Event(OdooObjectType):
     # image_filename = graphene.String()
     # thumbnail = graphene.String()
     # media_gallery = graphene.List(graphene.NonNull(lambda: ProductImage))
-    categories = graphene.List(graphene.NonNull(lambda: Category))
     # allow_out_of_stock = graphene.Boolean()
     # show_available_qty = graphene.Boolean()
     # out_of_stock_message = graphene.String()
@@ -477,7 +503,7 @@ class Event(OdooObjectType):
     # is_in_wishlist = graphene.Boolean()
     #TODO _05 Specific for Event:Course/Sessions
     # qty = graphene.Float()
-    slug = graphene.String()
+
     #TODO _05 Templates, Variants, Attributes ...
     # alternative_products = graphene.List(graphene.NonNull(lambda: Product))
     # accessory_products = graphene.List(graphene.NonNull(lambda: Product))
@@ -498,7 +524,19 @@ class Event(OdooObjectType):
     #                                 description='Specific to Product Template')
     # product_variants = graphene.List(graphene.NonNull(lambda: Product), description='Specific to Product Template')
     # first_variant = graphene.Field((lambda: Product), description='Specific to use in Product Template')
-    json_ld = generic.GenericScalar()
+
+    def resolve_sync_id(self, info):
+        domain_code = 'private'
+        if self.website_id:
+            domain_code = self.website_id.domain_code
+        template_code = self.template_code
+        if template_code == '' or template_code == False:
+            template_code = 'evnt'
+        odoo_post_id = self.id
+        return '{}.evnt-{}.{}'.format(domain_code,template_code,odoo_post_id) or None 
+
+    def resolve_version(self, info):
+        return 1
 
     def resolve_typecode(self, info):
         return self.typecode or None
@@ -506,13 +544,16 @@ class Event(OdooObjectType):
     def resolve_public_user(self, info):
         return self.user_id or None
 
+    def resolve_website(self, info):
+        return self.website_id or None   
+
     def resolve_company(self, info):
         return self.company_id or None    
 
     def resolve_organizer(self, info):
         return self.organizer_id or None   
 
-    def resolve_address(self, info):
+    def resolve_location(self, info):
         return self.address_id or None 
 
     def resolve_event_type(self, info):
@@ -1164,11 +1205,15 @@ class Website(OdooObjectType):
     id = graphene.Int()
     name = graphene.String()
     domain = graphene.String()
+    domain_code = graphene.String()
     company = graphene.Field(lambda: Company)
     public_user = graphene.Field(lambda: User)
 
     def resolve_domain(self, info):
         return self.domain or None
+
+    def resolve_domain_code(self, info):
+        return self.domain_code or None
 
     def resolve_company(self, info):
         return self.company_id or None
