@@ -3,6 +3,7 @@
 # License LGPL-3.0 or later (http://www.gnu.org/licenses/lgpl).
 
 import graphene
+import json
 from graphql import GraphQLError
 from odoo.http import request
 from odoo import _

@@ -14,6 +14,7 @@ from odoo.exceptions import AccessError
 from odoo.http import request
 
 
+
 # --------------------- #
 #       ENUMS           #
 # --------------------- #
@@ -53,6 +54,7 @@ class SortEnum(graphene.Enum):
 # --------------------- #
 #      Functions        #
 # --------------------- #
+
 
 def get_document_with_check_access(model, domain=[], order=None, limit=20, offset=0, access_token=None,
                                    error_msg='This document does not exist.'):
@@ -275,17 +277,32 @@ class Post(OdooObjectType):
     overline = graphene.String()
     teasertext = graphene.String()
     content = graphene.String()
-    blocks = graphene.String()
+    blocks = generic.GenericScalar()
     meta_title = graphene.String()
     meta_keywords = graphene.String()
-    meta_description = graphene.String()    
+    meta_description = graphene.String()
     seo_name = graphene.String()
+    slug_blog = graphene.String()
+    slug_post = graphene.String()
+
+    def resolve_slug_blog(self, info):
+        blog_name = slugify(self.blog_id.name or '').strip().strip('-')
+        slug = '/{}-{}'.format(blog_name, self.blog_id.id)
+        return slug or None
+
+    def resolve_slug_post(self, info):
+        post_name = slugify(self.name or '').strip().strip('-')
+        slug = '/{}-{}'.format(post_name, self.id)
+        return slug or None
 
     def resolve_author(self, info):
         return self.author_id or None
 
     def resolve_version(self, info):
         return 1
+
+    def resolve_blocks(self, info):
+        return self.blocks or None
 
     def resolve_blog(self, info):
         return self.blog_id or None
@@ -480,7 +497,7 @@ class Event(OdooObjectType):
     description = graphene.String()
     sync_id = graphene.String()
     write_date = graphene.String()
-    blocks = graphene.String()
+    blocks = generic.GenericScalar()
     ticket_instructions = graphene.String()
     note = graphene.String()
     currency = graphene.Field(lambda: Currency)
@@ -500,6 +517,7 @@ class Event(OdooObjectType):
     date_begin = graphene.String()
     date_end = graphene.String()
     event_mail_template_id = graphene.String()
+    slug = graphene.String()
     # is_in_wishlist = graphene.Boolean()
     #TODO _05 Specific for Event:Course/Sessions
     # qty = graphene.Float()
@@ -525,6 +543,11 @@ class Event(OdooObjectType):
     # product_variants = graphene.List(graphene.NonNull(lambda: Product), description='Specific to Product Template')
     # first_variant = graphene.Field((lambda: Product), description='Specific to use in Product Template')
 
+    def resolve_slug(self, info):
+        name = slugify(self.name or '').strip().strip('-')
+        slug = '/{}-{}'.format(name, self.id)
+        return slug or None
+
     def resolve_sync_id(self, info):
         domain_code = 'private'
         if self.website_id:
@@ -545,7 +568,10 @@ class Event(OdooObjectType):
         return self.user_id or None
 
     def resolve_website(self, info):
-        return self.website_id or None   
+        return self.website_id or None
+    
+    def resolve_blocks(self, info):
+        return self.blocks or None
 
     def resolve_company(self, info):
         return self.company_id or None    

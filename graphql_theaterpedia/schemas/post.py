@@ -3,6 +3,7 @@
 # License LGPL-3.0 or later (http://www.gnu.org/licenses/lgpl).
 
 import graphene
+from graphene.types.generic import GenericScalar
 from odoo.http import request
 from graphql import GraphQLError
 from odoo import _
@@ -119,7 +120,7 @@ class AddBlogPostInput(graphene.InputObjectType):
     blog_id = graphene.Int()
     subtitle = graphene.String()
     teasertext = graphene.String()
-    blocks = graphene.String()
+    blocks = GenericScalar()
     meta_title = graphene.String()
     meta_keywords = graphene.String()
     meta_description = graphene.String()    
@@ -131,7 +132,7 @@ class UpdatePostInput(graphene.InputObjectType):
     author_id = graphene.Int()
     overline = graphene.String()
     teasertext = graphene.String()
-    blocks = graphene.String()
+    blocks = GenericScalar()
     meta_title = graphene.String()
     meta_keywords = graphene.String()
     meta_description = graphene.String()

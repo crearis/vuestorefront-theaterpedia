@@ -22,7 +22,7 @@ class BlogPost(models.Model):
     _inherit = "blog.post"
 
     description = fields.Char('Teasertext', translate=True, default='')
-    blocks = JsonField('Pruvious Blocks', required=False, default="'{}'")   # a json object represented as dict / list / python primitives, see: https://gist.github.com/danmana/5242f37b7d63daf4698de7c61c8b59fc
+    blocks = JsonField('Pruvious Blocks', required=False, default=[])   # a json object represented as dict / list / python primitives, see: https://gist.github.com/danmana/5242f37b7d63daf4698de7c61c8b59fc
     # homesite_id = fields.Integer('Homesite', default=4)
     homesite_id = fields.Many2one(
         "website",

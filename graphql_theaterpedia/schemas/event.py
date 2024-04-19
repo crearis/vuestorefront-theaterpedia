@@ -3,6 +3,7 @@
 # License LGPL-3.0 or later (http://www.gnu.org/licenses/lgpl).
 
 import graphene
+from graphene.types.generic import GenericScalar
 from graphql import GraphQLError
 from odoo.http import request
 from odoo import _
@@ -196,7 +197,7 @@ class UpdateEventInput(graphene.InputObjectType):
     template_code = graphene.String()
     teasertext = graphene.String()
     description = graphene.String()
-    blocks = graphene.String()
+    blocks = GenericScalar()
     note = graphene.String()
     meta_title = graphene.String()
     meta_keywords = graphene.String()
