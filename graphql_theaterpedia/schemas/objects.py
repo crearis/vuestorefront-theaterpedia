@@ -252,6 +252,31 @@ class User(OdooObjectType):
     def resolve_partner(self, info):
         return self.partner_id or None
 
+class DomainUser(OdooObjectType):
+    id = graphene.Int(required=True)
+    name = graphene.String(required=True)
+    email = graphene.String(required=True)
+    partner = graphene.Field(lambda: Partner)
+    domain_code = graphene.Field(lambda: Website)
+    role = graphene.String(required=True)
+    title = graphene.String()
+    description = graphene.String()
+    capabilities = graphene.String(required=True)
+
+    def resolve_email(self, info):
+        return self.login or None
+
+    def resolve_partner(self, info):
+        return self.partner_id or None
+
+    def resolve_domain_code(self, info):
+        return 'dasei'
+
+    def resolve_role(self, info):
+        return None
+
+    def resolve_capabilities(self, info):
+        return None
 
 class Currency(OdooObjectType):
     id = graphene.Int(required=True)

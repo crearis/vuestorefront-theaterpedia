@@ -16,7 +16,6 @@ class Website(models.Model):
         'Payment Error Return Url', required=True,  translate=True, default='Dummy'
     )
     vsf_mailing_list_id = fields.Many2one('mailing.list', 'Newsletter', domain=[('is_public', '=', True)])
-    domain_code = fields.Char('Domain-Code')
 
     @api.model
     def enable_b2c_reset_password(self):
