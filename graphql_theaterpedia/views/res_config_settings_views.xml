@@ -88,31 +88,7 @@
                                 <field name="domain_code"/>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-12 col-lg-6 o_setting_box" id="theaterpedia_website_domain_exec">
-                        <div class="o_setting_right_pane">
-                            <label for="domain_exec"/>
-                            <div class="content-group">
-                                <field name="domain_exec"/>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-12 col-lg-6 o_setting_box" id="theaterpedia_website_domain_team">
-                        <div class="o_setting_right_pane">
-                            <label for="domain_team"/>
-                            <div class="content-group">
-                                <field name="domain_team"/>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-12 col-lg-6 o_setting_box" id="theaterpedia_website_domain_user">
-                        <div class="o_setting_right_pane">
-                            <label for="domain_user"/>
-                            <div class="content-group">
-                                <field name="domain_user"/>
-                            </div>
-                        </div>
-                    </div>                                                                           
+                    </div>                                                                        
                 </div>
                 <h2>Vue Storefront Images</h2>
                 <div class="row mt16 o_settings_container" id="vsf_images_settings">

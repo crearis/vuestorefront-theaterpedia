@@ -114,14 +114,14 @@ class PostQuery(graphene.ObjectType):
         return PostList(posts=posts, total_count=total_count)
     
 class AddBlogPostInput(graphene.InputObjectType):
-    name = graphene.String(required=True)
+    headline = graphene.String(required=True)
     """ partner-id """
     author_id = graphene.Int(required=True)
-    blog_id = graphene.Int()
-    subtitle = graphene.String()
+    blog_id = graphene.Int(required=True)
+    overline = graphene.String()
     teasertext = graphene.String()
     blocks = GenericScalar()
-    meta_title = graphene.String()
+    # meta_title = graphene.String()
     meta_keywords = graphene.String()
     meta_description = graphene.String()    
 
@@ -133,7 +133,7 @@ class UpdatePostInput(graphene.InputObjectType):
     overline = graphene.String()
     teasertext = graphene.String()
     blocks = GenericScalar()
-    meta_title = graphene.String()
+    # meta_title = graphene.String()
     meta_keywords = graphene.String()
     meta_description = graphene.String()
 
@@ -155,10 +155,10 @@ class AddPost(graphene.Mutation):
             'subtitle': post.get('overline'),
             'description': post.get('teasertext'),
             'blocks': post.get('blocks'),
-            'website_meta_title': post.get('meta_title'),
             'website_meta_keywords': post.get('meta_keywords'),
             'website_meta_description': post.get('meta_description'),               
         }
+        #             'website_meta_title': post.get('meta_title'),
 
         # Create post entry
         post = BlogPost.create(values)
@@ -182,10 +182,10 @@ class UpdatePost(graphene.Mutation):
             'subtitle': post.get('overline'),
             'description': post.get('teasertext'),
             'blocks': post.get('blocks'),
-            'website_meta_title': post.get('meta_title'),
             'website_meta_keywords': post.get('meta_keywords'),
             'website_meta_description': post.get('meta_description'),            
         }
+        #             'website_meta_title': post.get('meta_title'),
 
         if post.get('headline'):
             values.update({'name': post['headline']})
