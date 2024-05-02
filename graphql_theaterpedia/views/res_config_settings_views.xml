@@ -79,17 +79,6 @@
                         </div>
                     </div>
                 </div>
-                <h2>Theaterpedia-Integration</h2>                
-                <div class="row mt16 o_settings_container" id="theaterpedia_website_settings">
-                    <div class="col-12 col-lg-6 o_setting_box" id="theaterpedia_website_domain_settings">
-                        <div class="o_setting_right_pane">
-                            <label for="domain_code"/>
-                            <div class="content-group">
-                                <field name="domain_code"/>
-                            </div>
-                        </div>
-                    </div>                                                                        
-                </div>
                 <h2>Vue Storefront Images</h2>
                 <div class="row mt16 o_settings_container" id="vsf_images_settings">
                     <div class="col-12 col-lg-6 o_setting_box" id="vsf_image_quality_settings">
