@@ -14,41 +14,97 @@ from odoo.exceptions import AccessError
 from odoo.http import request
 
 
-
 # --------------------- #
 #       ENUMS           #
 # --------------------- #
 
-AddressType = graphene.Enum('AddressType', [('Contact', 'contact'), ('InvoiceAddress', 'invoice'),
-                                            ('DeliveryAddress', 'delivery'), ('OtherAddress', 'other'),
-                                            ('PrivateAddress', 'private')])
+AddressType = graphene.Enum(
+    "AddressType",
+    [
+        ("Contact", "contact"),
+        ("InvoiceAddress", "invoice"),
+        ("DeliveryAddress", "delivery"),
+        ("OtherAddress", "other"),
+        ("PrivateAddress", "private"),
+    ],
+)
 
-VariantCreateMode = graphene.Enum('VariantCreateMode', [('Instantly', 'always'), ('Dynamically', 'dynamically'),
-                                                        ('NeverOption', 'no_variant')])
+VariantCreateMode = graphene.Enum(
+    "VariantCreateMode",
+    [
+        ("Instantly", "always"),
+        ("Dynamically", "dynamically"),
+        ("NeverOption", "no_variant"),
+    ],
+)
 
-FilterVisibility = graphene.Enum('FilterVisibility', [('Visible', 'visible'), ('Hidden', 'hidden')])
+FilterVisibility = graphene.Enum(
+    "FilterVisibility", [("Visible", "visible"), ("Hidden", "hidden")]
+)
 
-OrderStage = graphene.Enum('OrderStage', [('Quotation', 'draft'), ('QuotationSent', 'sent'),
-                                          ('SalesOrder', 'sale'), ('Locked', 'done'), ('Cancelled', 'cancel')])
+OrderStage = graphene.Enum(
+    "OrderStage",
+    [
+        ("Quotation", "draft"),
+        ("QuotationSent", "sent"),
+        ("SalesOrder", "sale"),
+        ("Locked", "done"),
+        ("Cancelled", "cancel"),
+    ],
+)
 
-EventTypeEnum = graphene.Enum('EventTypeEnum', [('OnlineVerkauf', 1), ('Konferenz', 2), 
-                                          ('Ausstellung', 3), ('Training', 4), ('Sport', 5), ('Theater', 6)])
+EventTypeEnum = graphene.Enum(
+    "EventTypeEnum",
+    [
+        ("OnlineVerkauf", 1),
+        ("Konferenz", 2),
+        ("Ausstellung", 3),
+        ("Training", 4),
+        ("Sport", 5),
+        ("Theater", 6),
+    ],
+)
 
-EventEditMode = graphene.Enum('EventEditMode', [('locked', 'gesperrt'), ('blocks', 'Blocks ändern'), ('content', 'Content ändern'), ('full', 'voll änderbar')])
+EventEditMode = graphene.Enum(
+    "EventEditMode",
+    [
+        ("locked", "gesperrt"),
+        ("blocks", "Blocks ändern"),
+        ("content", "Content ändern"),
+        ("full", "voll änderbar"),
+    ],
+)
 
-InvoiceStatus = graphene.Enum('InvoiceStatus', [('UpsellingOpportunity', 'upselling'), ('FullyInvoiced', 'invoiced'),
-                                                ('ToInvoice', 'to invoice'), ('NothingtoInvoice', 'no')])
+InvoiceStatus = graphene.Enum(
+    "InvoiceStatus",
+    [
+        ("UpsellingOpportunity", "upselling"),
+        ("FullyInvoiced", "invoiced"),
+        ("ToInvoice", "to invoice"),
+        ("NothingtoInvoice", "no"),
+    ],
+)
 
-InvoiceState = graphene.Enum('InvoiceState', [('Draft', 'draft'), ('Posted', 'posted'), ('Cancelled', 'cancel')])
+InvoiceState = graphene.Enum(
+    "InvoiceState", [("Draft", "draft"), ("Posted", "posted"), ("Cancelled", "cancel")]
+)
 
-PaymentTransactionState = graphene.Enum('PaymentTransactionState', [('Draft', 'draft'), ('Pending', 'pending'),
-                                                               ('Authorized', 'authorized'), ('Confirmed', 'done'),
-                                                               ('Canceled', 'cancel'), ('Error', 'error')])
+PaymentTransactionState = graphene.Enum(
+    "PaymentTransactionState",
+    [
+        ("Draft", "draft"),
+        ("Pending", "pending"),
+        ("Authorized", "authorized"),
+        ("Confirmed", "done"),
+        ("Canceled", "cancel"),
+        ("Error", "error"),
+    ],
+)
 
 
 class SortEnum(graphene.Enum):
-    ASC = 'ASC'
-    DESC = 'DESC'
+    ASC = "ASC"
+    DESC = "DESC"
 
 
 # --------------------- #
@@ -56,18 +112,25 @@ class SortEnum(graphene.Enum):
 # --------------------- #
 
 
-def get_document_with_check_access(model, domain=[], order=None, limit=20, offset=0, access_token=None,
-                                   error_msg='This document does not exist.'):
+def get_document_with_check_access(
+    model,
+    domain=[],
+    order=None,
+    limit=20,
+    offset=0,
+    access_token=None,
+    error_msg="This document does not exist.",
+):
     if access_token:
         model = model.sudo()
-        domain = [('access_token', '=', access_token)]
+        domain = [("access_token", "=", access_token)]
     document = model.search(domain, order=order, limit=limit, offset=offset)
     document_sudo = document.with_user(SUPERUSER_ID).exists()
     if document and not document_sudo:
         raise GraphQLError(_(error_msg))
     try:
-        document.check_access_rights('read')
-        document.check_access_rule('read')
+        document.check_access_rights("read")
+        document.check_access_rule("read")
     except AccessError:
         return []
     return document_sudo
@@ -75,21 +138,23 @@ def get_document_with_check_access(model, domain=[], order=None, limit=20, offse
 
 def get_document_count_with_check_access(model, domain):
     try:
-        model.check_access_rights('read')
-        model.check_access_rule('read')
+        model.check_access_rights("read")
+        model.check_access_rule("read")
     except AccessError:
         return 0
     return model.search_count(domain)
 
 
 def get_product_pricing_info(env, product):
-    website = env['website'].get_current_website()
+    website = env["website"].get_current_website()
     pricelist = website.get_current_pricelist()
-    return product and product._get_combination_info_variant(pricelist=pricelist) or None
+    return (
+        product and product._get_combination_info_variant(pricelist=pricelist) or None
+    )
 
 
 def product_is_in_wishlist(env, product):
-    website = env['website'].get_current_website()
+    website = env["website"].get_current_website()
     request.website = website
     return product._is_in_wishlist()
 
@@ -97,6 +162,7 @@ def product_is_in_wishlist(env, product):
 # --------------------- #
 #       Objects         #
 # --------------------- #
+
 
 class Lead(OdooObjectType):
     id = graphene.Int(required=True)
@@ -168,7 +234,7 @@ class Company(OdooObjectType):
         return self.state_id or None
 
     def resolve_image(self, info):
-        return '/web/image/res.company/{}/image_1920'.format(self.id)
+        return "/web/image/res.company/{}/image_1920".format(self.id)
 
 
 class Pricelist(OdooObjectType):
@@ -183,6 +249,8 @@ class Pricelist(OdooObjectType):
 class Partner(OdooObjectType):
     id = graphene.Int(required=True)
     name = graphene.String()
+    firstname = graphene.String()
+    lastname = graphene.String()
     street = graphene.String()
     street2 = graphene.String()
     city = graphene.String()
@@ -215,7 +283,9 @@ class Partner(OdooObjectType):
         return self.type or None
 
     def resolve_billing_address(self, info):
-        billing_address = self.child_ids.filtered(lambda a: a.type and a.type == 'invoice')
+        billing_address = self.child_ids.filtered(
+            lambda a: a.type and a.type == "invoice"
+        )
         return billing_address and billing_address[0] or None
 
     def resolve_company(self, info):
@@ -228,15 +298,18 @@ class Partner(OdooObjectType):
         return self.parent_id or None
 
     def resolve_image(self, info):
-        return '/web/image/res.partner/{}/image_1920'.format(self.id)
+        return "/web/image/res.partner/{}/image_1920".format(self.id)
 
     def resolve_public_pricelist(self, info):
-        website = self.env['website'].get_current_website()
+        website = self.env["website"].get_current_website()
         partner = website.user_id.sudo().partner_id
-        return partner.last_website_so_id.pricelist_id or partner.property_product_pricelist
+        return (
+            partner.last_website_so_id.pricelist_id
+            or partner.property_product_pricelist
+        )
 
     def resolve_current_pricelist(self, info):
-        website = self.env['website'].get_current_website()
+        website = self.env["website"].get_current_website()
         return website.get_current_pricelist()
 
 
@@ -252,12 +325,13 @@ class User(OdooObjectType):
     def resolve_partner(self, info):
         return self.partner_id or None
 
+
 class DomainUser(OdooObjectType):
     id = graphene.Int(required=True)
     name = graphene.String(required=True)
     email = graphene.String(required=True)
-    partner = graphene.Field(lambda: Partner)
-    domain_code = graphene.Field(lambda: Website)
+    user = graphene.Field(lambda: User)
+    domain_code = graphene.String(required=True)
     role = graphene.String(required=True)
     title = graphene.String()
     description = graphene.String()
@@ -266,27 +340,31 @@ class DomainUser(OdooObjectType):
     def resolve_email(self, info):
         return self.login or None
 
-    def resolve_partner(self, info):
-        return self.partner_id or None
+    def resolve_user(self, info):
+        return self.user_id or None
 
     def resolve_domain_code(self, info):
-        return 'dasei'
+        if self.domain_id:
+            return self.domain_id.domain_code or None
+        return None
 
     def resolve_role(self, info):
-        return None
+        return self.role or None
 
     def resolve_capabilities(self, info):
-        return None
+        return self.capabilities or None
+
 
 class Currency(OdooObjectType):
     id = graphene.Int(required=True)
     name = graphene.String()
     symbol = graphene.String()
 
+
 class Post(OdooObjectType):
     id = graphene.Int(required=True)
     version = graphene.Int()
-    author = graphene.Field(lambda: Partner)    
+    author = graphene.Field(lambda: Partner)
     blog = graphene.Field(lambda: Blog)
     website = graphene.Field(lambda: Website)
     homesite = graphene.Field(lambda: Website)
@@ -311,13 +389,13 @@ class Post(OdooObjectType):
     slug_post = graphene.String()
 
     def resolve_slug_blog(self, info):
-        blog_name = slugify(self.blog_id.name or '').strip().strip('-')
-        slug = '/{}-{}'.format(blog_name, self.blog_id.id)
+        blog_name = slugify(self.blog_id.name or "").strip().strip("-")
+        slug = "/{}-{}".format(blog_name, self.blog_id.id)
         return slug or None
 
     def resolve_slug_post(self, info):
-        post_name = slugify(self.name or '').strip().strip('-')
-        slug = '/{}-{}'.format(post_name, self.id)
+        post_name = slugify(self.name or "").strip().strip("-")
+        slug = "/{}-{}".format(post_name, self.id)
         return slug or None
 
     def resolve_author(self, info):
@@ -331,7 +409,7 @@ class Post(OdooObjectType):
 
     def resolve_blog(self, info):
         return self.blog_id or None
-    
+
     def resolve_website(self, info):
         return self.website_id or None
 
@@ -341,10 +419,10 @@ class Post(OdooObjectType):
     def resolve_sync_id(self, info):
         domain_code = self.homesite_id.domain_code
         template_code = self.blog_id.template_code
-        if template_code == '':
-            template_code = 'blog'
+        if template_code == "":
+            template_code = "blog"
         odoo_post_id = self.id
-        return '{}.post-{}.{}'.format(domain_code,template_code,odoo_post_id) or None        
+        return "{}.post-{}.{}".format(domain_code, template_code, odoo_post_id) or None
 
     def resolve_headline(self, info):
         return self.name or None
@@ -362,24 +440,25 @@ class Post(OdooObjectType):
         return self.website_meta_keywords or None
 
     def resolve_meta_description(self, info):
-        return self.website_meta_description or None    
+        return self.website_meta_description or None
+
 
 class Blog(OdooObjectType):
     id = graphene.Int(required=True)
     website = graphene.Field(lambda: Website)
     name = graphene.String()
     template_code = graphene.String()
-    subtitle = graphene.String()    
+    subtitle = graphene.String()
     meta_title = graphene.String()
     meta_keywords = graphene.String()
-    meta_description = graphene.String()    
-    seo_name = graphene.String()    
+    meta_description = graphene.String()
+    seo_name = graphene.String()
 
     def resolve_website(self, info):
         return self.website_id or None
 
     def resolve_meta_title(self, info):
-        return self.template_code or 'blog'
+        return self.template_code or "blog"
 
     def resolve_meta_title(self, info):
         return self.website_meta_title or None
@@ -388,7 +467,8 @@ class Blog(OdooObjectType):
         return self.website_meta_keywords or None
 
     def resolve_meta_description(self, info):
-        return self.website_meta_description or None    
+        return self.website_meta_description or None
+
 
 class Category(OdooObjectType):
     id = graphene.Int(required=True)
@@ -421,7 +501,9 @@ class AttributeValue(OdooObjectType):
     display_type = graphene.String()
     html_color = graphene.String()
     search = graphene.String()
-    price_extra = graphene.Float(description='Not use in the return Attributes List of the Products Query')
+    price_extra = graphene.Float(
+        description="Not use in the return Attributes List of the Products Query"
+    )
     attribute = graphene.Field(lambda: Attribute)
 
     def resolve_id(self, info):
@@ -430,7 +512,7 @@ class AttributeValue(OdooObjectType):
     def resolve_search(self, info):
         attribute_id = self.attribute_id.id
         attribute_value_id = self.id
-        return '{}-{}'.format(attribute_id, attribute_value_id) or None
+        return "{}-{}".format(attribute_id, attribute_value_id) or None
 
     def resolve_attribute(self, info):
         return self.attribute_id or None
@@ -465,7 +547,7 @@ class ProductImage(OdooObjectType):
         return self.id or None
 
     def resolve_image(self, info):
-        return '/web/image/product.image/{}/image_1920'.format(self.id)
+        return "/web/image/product.image/{}/image_1920".format(self.id)
 
     def resolve_image_filename(self, info):
         return slugify(self.name)
@@ -492,6 +574,7 @@ class EventType(OdooObjectType):
     seats_max = graphene.Int()
     seats_max = graphene.Int()
 
+
 class EventStage(OdooObjectType):
     id = graphene.Int(required=True)
     name = graphene.String()
@@ -500,6 +583,7 @@ class EventStage(OdooObjectType):
     legend_done = graphene.String()
     legend_normal = graphene.String()
 
+
 class Event(OdooObjectType):
     id = graphene.Int(required=True)
     sync_id = graphene.String()
@@ -507,12 +591,12 @@ class Event(OdooObjectType):
     template_code = graphene.String()
     name = graphene.String()
     headline = graphene.String()
-    overline = graphene.String()  
+    overline = graphene.String()
     public_user = graphene.Field(lambda: User)
     company = graphene.Field(lambda: Partner)
     website = graphene.Field(lambda: Website)
     organizer = graphene.Field(lambda: Partner)
-    location = graphene.Field(lambda: Partner)    
+    location = graphene.Field(lambda: Partner)
     event_type = graphene.Field(lambda: EventType)
     edit_mode = EventEditMode()
     stage = graphene.Field(lambda: EventStage)
@@ -529,7 +613,7 @@ class Event(OdooObjectType):
     meta_title = graphene.String()
     meta_keywords = graphene.String()
     meta_description = graphene.String()
-    #TODO _05 Image via Product
+    # TODO _05 Image via Product
     # image = graphene.String()
     # small_image = graphene.String()
     # image_filename = graphene.String()
@@ -544,10 +628,10 @@ class Event(OdooObjectType):
     event_mail_template_id = graphene.String()
     slug = graphene.String()
     # is_in_wishlist = graphene.Boolean()
-    #TODO _05 Specific for Event:Course/Sessions
+    # TODO _05 Specific for Event:Course/Sessions
     # qty = graphene.Float()
 
-    #TODO _05 Templates, Variants, Attributes ...
+    # TODO _05 Templates, Variants, Attributes ...
     # alternative_products = graphene.List(graphene.NonNull(lambda: Product))
     # accessory_products = graphene.List(graphene.NonNull(lambda: Product))
     # Specific to use in Product Variant
@@ -558,7 +642,7 @@ class Event(OdooObjectType):
     # is_variant_possible = graphene.Boolean(description='Specific to Product Variant')
     # variant_attribute_values = graphene.List(graphene.NonNull(lambda: AttributeValue),
     #                                         description='Specific to Product Variant')
-    
+
     # product_template = graphene.Field((lambda: Event), description='Specific to Product Variant')
     # Specific to use in Product Template
     # combination_info = generic.GenericScalar(description='Specific to Product Template')
@@ -569,19 +653,19 @@ class Event(OdooObjectType):
     # first_variant = graphene.Field((lambda: Product), description='Specific to use in Product Template')
 
     def resolve_slug(self, info):
-        name = slugify(self.name or '').strip().strip('-')
-        slug = '/{}-{}'.format(name, self.id)
+        name = slugify(self.name or "").strip().strip("-")
+        slug = "/{}-{}".format(name, self.id)
         return slug or None
 
     def resolve_sync_id(self, info):
-        domain_code = 'private'
+        domain_code = "private"
         if self.website_id:
             domain_code = self.website_id.domain_code
         template_code = self.template_code
-        if template_code == '' or template_code == False:
-            template_code = 'evnt'
+        if template_code == "" or template_code == False:
+            template_code = "evnt"
         odoo_post_id = self.id
-        return '{}.evnt-{}.{}'.format(domain_code,template_code,odoo_post_id) or None 
+        return "{}.evnt-{}.{}".format(domain_code, template_code, odoo_post_id) or None
 
     def resolve_version(self, info):
         return 1
@@ -594,24 +678,24 @@ class Event(OdooObjectType):
 
     def resolve_website(self, info):
         return self.website_id or None
-    
+
     def resolve_blocks(self, info):
         return self.blocks or None
 
     def resolve_company(self, info):
-        return self.company_id or None    
+        return self.company_id or None
 
     def resolve_organizer(self, info):
-        return self.organizer_id or None   
+        return self.organizer_id or None
 
     def resolve_location(self, info):
-        return self.address_id or None 
+        return self.address_id or None
 
     def resolve_event_type(self, info):
-        return self.event_type_id or None 
+        return self.event_type_id or None
 
     def resolve_stage(self, info):
-        return self.stage_id or None 
+        return self.stage_id or None
 
     def resolve_visibility(self, info):
         if self.website_published:
@@ -624,7 +708,7 @@ class Event(OdooObjectType):
 
     def resolve_overline(self, info):
         return self.subtitle or None
-    
+
     def resolve_teasertext(self, info):
         return self.teasertext or None
 
@@ -639,7 +723,6 @@ class Event(OdooObjectType):
 
     def resolve_meta_description(self, info):
         return self.website_meta_description or None
-  
 
     """ 
     def resolve_image(self, info):
@@ -748,7 +831,6 @@ class Event(OdooObjectType):
         return self and self.get_json_ld() or None
 
 
-
 class Product(OdooObjectType):
     id = graphene.Int(required=True)
     type_id = graphene.String()
@@ -781,28 +863,44 @@ class Product(OdooObjectType):
     alternative_products = graphene.List(graphene.NonNull(lambda: Product))
     accessory_products = graphene.List(graphene.NonNull(lambda: Product))
     # Specific to use in Product Variant
-    combination_info_variant = generic.GenericScalar(description='Specific to Product Variant')
-    variant_price = graphene.Float(description='Specific to Product Variant')
-    variant_price_after_discount = graphene.Float(description='Specific to Product Variant')
-    variant_has_discounted_price = graphene.Boolean(description='Specific to Product Variant')
-    is_variant_possible = graphene.Boolean(description='Specific to Product Variant')
-    variant_attribute_values = graphene.List(graphene.NonNull(lambda: AttributeValue),
-                                             description='Specific to Product Variant')
-    product_template = graphene.Field((lambda: Product), description='Specific to Product Variant')
+    combination_info_variant = generic.GenericScalar(
+        description="Specific to Product Variant"
+    )
+    variant_price = graphene.Float(description="Specific to Product Variant")
+    variant_price_after_discount = graphene.Float(
+        description="Specific to Product Variant"
+    )
+    variant_has_discounted_price = graphene.Boolean(
+        description="Specific to Product Variant"
+    )
+    is_variant_possible = graphene.Boolean(description="Specific to Product Variant")
+    variant_attribute_values = graphene.List(
+        graphene.NonNull(lambda: AttributeValue),
+        description="Specific to Product Variant",
+    )
+    product_template = graphene.Field(
+        (lambda: Product), description="Specific to Product Variant"
+    )
     # Specific to use in Product Template
-    combination_info = generic.GenericScalar(description='Specific to Product Template')
-    price = graphene.Float(description='Specific to Product Template')
-    attribute_values = graphene.List(graphene.NonNull(lambda: AttributeValue),
-                                     description='Specific to Product Template')
-    product_variants = graphene.List(graphene.NonNull(lambda: Product), description='Specific to Product Template')
-    first_variant = graphene.Field((lambda: Product), description='Specific to use in Product Template')
+    combination_info = generic.GenericScalar(description="Specific to Product Template")
+    price = graphene.Float(description="Specific to Product Template")
+    attribute_values = graphene.List(
+        graphene.NonNull(lambda: AttributeValue),
+        description="Specific to Product Template",
+    )
+    product_variants = graphene.List(
+        graphene.NonNull(lambda: Product), description="Specific to Product Template"
+    )
+    first_variant = graphene.Field(
+        (lambda: Product), description="Specific to use in Product Template"
+    )
     json_ld = generic.GenericScalar()
 
     def resolve_type_id(self, info):
-        if self.detailed_type == 'product':
-            return 'simple'
+        if self.detailed_type == "product":
+            return "simple"
         else:
-            return 'configurable'
+            return "configurable"
 
     def resolve_visibility(self, info):
         if self.website_published:
@@ -835,22 +933,28 @@ class Product(OdooObjectType):
         return self.website_meta_description or None
 
     def resolve_image(self, info):
-        return '/web/image/{}/{}/image_1920'.format(self._name, self.id)
+        return "/web/image/{}/{}/image_1920".format(self._name, self.id)
 
     def resolve_small_image(self, info):
-        return '/web/image/{}/{}/image_128'.format(self._name, self.id)
+        return "/web/image/{}/{}/image_128".format(self._name, self.id)
 
     def resolve_image_filename(self, info):
         return slugify(self.name)
 
     def resolve_thumbnail(self, info):
-        return '/web/image/{}/{}/image_512'.format(self._name, self.id)
+        return "/web/image/{}/{}/image_512".format(self._name, self.id)
 
     def resolve_categories(self, info):
-        website = self.env['website'].get_current_website()
+        website = self.env["website"].get_current_website()
         if website:
-            return self.public_categ_ids.filtered(
-                lambda c: not c.website_id or c.website_id and c.website_id.id == website.id) or None
+            return (
+                self.public_categ_ids.filtered(
+                    lambda c: not c.website_id
+                    or c.website_id
+                    and c.website_id.id == website.id
+                )
+                or None
+            )
         return self.public_categ_ids or None
 
     def resolve_allow_out_of_stock(self, info):
@@ -871,10 +975,12 @@ class Product(OdooObjectType):
         return bool(is_in_wishlist)
 
     def resolve_media_gallery(self, info):
-        if self._name == 'product.template':
+        if self._name == "product.template":
             return self.product_template_image_ids or None
         else:
-            return self.product_template_image_ids + self.product_variant_image_ids or None
+            return (
+                self.product_template_image_ids + self.product_variant_image_ids or None
+            )
 
     def resolve_qty(self, info):
         return self.free_qty
@@ -897,17 +1003,17 @@ class Product(OdooObjectType):
     def resolve_variant_price(self, info):
         env = info.context["env"]
         pricing_info = get_product_pricing_info(env, self)
-        return pricing_info['list_price'] or None
+        return pricing_info["list_price"] or None
 
     def resolve_variant_price_after_discount(self, info):
         env = info.context["env"]
         pricing_info = get_product_pricing_info(env, self)
-        return pricing_info['price'] or None
+        return pricing_info["price"] or None
 
     def resolve_variant_has_discounted_price(self, info):
         env = info.context["env"]
         pricing_info = get_product_pricing_info(env, self)
-        return pricing_info['has_discounted_price']
+        return pricing_info["has_discounted_price"]
 
     def resolve_is_variant_possible(self, info):
         return self._is_variant_possible()
@@ -996,13 +1102,21 @@ class OrderLine(OdooObjectType):
 
     def resolve_gift_card(self, info):
         gift_card = None
-        if self.coupon_id and self.coupon_id.program_type and self.coupon_id.program_type == 'gift_card':
+        if (
+            self.coupon_id
+            and self.coupon_id.program_type
+            and self.coupon_id.program_type == "gift_card"
+        ):
             gift_card = self.coupon_id
         return gift_card
 
     def resolve_coupon(self, info):
         coupon = None
-        if self.coupon_id and self.coupon_id.program_type and self.coupon_id.program_type == 'coupons':
+        if (
+            self.coupon_id
+            and self.coupon_id.program_type
+            and self.coupon_id.program_type == "coupons"
+        ):
             coupon = self.coupon_id
         return coupon
 
@@ -1024,10 +1138,12 @@ class ShippingMethod(OdooObjectType):
     product = graphene.Field(lambda: Product)
 
     def resolve_price(self, info):
-        website = self.env['website'].get_current_website()
+        website = self.env["website"].get_current_website()
         request.website = website
         order = website.sale_get_order(force_create=True)
-        return self.rate_shipment(order)['price'] if self.free_over else self.fixed_price
+        return (
+            self.rate_shipment(order)["price"] if self.free_over else self.fixed_price
+        )
 
     def resolve_product(self, info):
         return self.product_id or None
@@ -1102,26 +1218,38 @@ class Order(OdooObjectType):
 
     def resolve_last_transaction(self, info):
         if self.transaction_ids:
-            return self.transaction_ids.sorted(key=lambda r: r.create_date, reverse=True)[0]
+            return self.transaction_ids.sorted(
+                key=lambda r: r.create_date, reverse=True
+            )[0]
         return None
 
     def resolve_amount_subtotal(self, info):
         subtotal_lines = self.order_line.filtered(lambda l: not l.is_reward_line)
-        return sum(subtotal_lines.mapped('price_total')) - self.amount_delivery
+        return sum(subtotal_lines.mapped("price_total")) - self.amount_delivery
 
     def resolve_amount_discounts(self, info):
         return self.reward_amount
 
     def resolve_amount_gift_cards(self, info):
-        return sum(self.order_line.filtered(
-            lambda l: l.coupon_id and l.coupon_id.program_type and
-                      l.coupon_id.program_type == 'gift_card').mapped('price_total'))
+        return sum(
+            self.order_line.filtered(
+                lambda l: l.coupon_id
+                and l.coupon_id.program_type
+                and l.coupon_id.program_type == "gift_card"
+            ).mapped("price_total")
+        )
 
     def resolve_coupons(self, info):
-        return self.applied_coupon_ids.filtered(lambda c: c.program_type == 'coupons') or None
+        return (
+            self.applied_coupon_ids.filtered(lambda c: c.program_type == "coupons")
+            or None
+        )
 
     def resolve_gift_cards(self, info):
-        return self.applied_coupon_ids.filtered(lambda c: c.program_type == 'gift_card') or None
+        return (
+            self.applied_coupon_ids.filtered(lambda c: c.program_type == "gift_card")
+            or None
+        )
 
     def resolve_cart_quantity(self, info):
         return self.cart_quantity or None
@@ -1207,7 +1335,7 @@ class PaymentIcon(OdooObjectType):
     image = graphene.String()
 
     def resolve_image(self, info):
-        return '/web/image/payment.icon/{}/image'.format(self.id)
+        return "/web/image/payment.icon/{}/image".format(self.id)
 
 
 class PaymentProvider(OdooObjectType):
@@ -1240,7 +1368,9 @@ class MailingContact(OdooObjectType):
     name = graphene.String()
     email = graphene.String()
     company_name = graphene.String()
-    subscription_list = graphene.List(graphene.NonNull(lambda: MailingContactSubscription))
+    subscription_list = graphene.List(
+        graphene.NonNull(lambda: MailingContactSubscription)
+    )
 
     def resolve_country(self, info):
         return self.country_id or None
@@ -1306,4 +1436,4 @@ class WebsiteMenuImage(OdooObjectType):
     button_url = graphene.String()
 
     def resolve_image(self, info):
-        return '/web/image/website.menu.image/{}/image'.format(self.id)
+        return "/web/image/website.menu.image/{}/image".format(self.id)
