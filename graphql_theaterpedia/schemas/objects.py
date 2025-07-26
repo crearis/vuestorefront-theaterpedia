@@ -272,12 +272,16 @@ class Partner(OdooObjectType):
     vat = graphene.String()
     public_pricelist = graphene.Field(lambda: Pricelist)
     current_pricelist = graphene.Field(lambda: Pricelist)
+    body_md = graphene.String()
+
+    def resolve_state(self, info):
+        return self.state_id or None
 
     def resolve_country(self, info):
         return self.country_id or None
 
-    def resolve_state(self, info):
-        return self.state_id or None
+    def resolve_body_md(self, info):
+        return self.body_md or None
 
     def resolve_address_type(self, info):
         return self.type or None
@@ -330,6 +334,9 @@ class DomainUser(OdooObjectType):
     id = graphene.Int(required=True)
     name = graphene.String(required=True)
     email = graphene.String(required=True)
+    slug = graphene.String()
+    version = graphene.Int()
+    sync_id = graphene.String()
     user = graphene.Field(lambda: User)
     domain_code = graphene.String(required=True)
     role = graphene.String(required=True)
@@ -338,7 +345,12 @@ class DomainUser(OdooObjectType):
     capabilities = graphene.String(required=True)
 
     def resolve_email(self, info):
-        return self.login or None
+        return self.user_id.login or None
+
+    def resolve_slug(self, info):
+        if self.user_id.name:
+            return slugify(self.user_id.name)
+        return None
 
     def resolve_user(self, info):
         return self.user_id or None
@@ -354,6 +366,19 @@ class DomainUser(OdooObjectType):
     def resolve_capabilities(self, info):
         return self.capabilities or None
 
+    def resolve_description(self, info):
+        return self.description or ''
+
+    def resolve_body_md(self, info):
+        return self.body_md or None
+
+    def resolve_version(self, info):
+        return 1
+
+    def resolve_sync_id(self, info):
+        domain_code = self.domain_id.domain_code
+        email = self.self.user_id.login
+        return "{}.{}".format(domain_code, email) or None
 
 class Currency(OdooObjectType):
     id = graphene.Int(required=True)
