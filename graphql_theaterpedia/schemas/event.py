@@ -224,7 +224,7 @@ class UpdateEvent(graphene.Mutation):
             'blocks': event.get('blocks'),
             'website_meta_title': event.get('meta_title'),
             'website_meta_keywords': event.get('meta_keywords'),
-            'website_meta_description': event.get('meta_description'),                        
+            'website_meta_description': event.get('meta_description')
         }
 
         if event.get('name'):

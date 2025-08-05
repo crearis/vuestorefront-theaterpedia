@@ -612,6 +612,7 @@ class EventStage(OdooObjectType):
 
 class Event(OdooObjectType):
     id = graphene.Int(required=True)
+    cid = graphene.String()
     sync_id = graphene.String()
     version = graphene.Int()
     template_code = graphene.String()
@@ -678,6 +679,9 @@ class Event(OdooObjectType):
     # product_variants = graphene.List(graphene.NonNull(lambda: Product), description='Specific to Product Template')
     # first_variant = graphene.Field((lambda: Product), description='Specific to use in Product Template')
 
+    def resolve_cid(self, info):
+        return self.cid or None
+
     def resolve_slug(self, info):
         template_code = 'evnt'
 
@@ -709,7 +713,7 @@ class Event(OdooObjectType):
         return template_code or None
 
     def resolve_version(self, info):
-        return 1
+        return self.version or 1
 
     def resolve_typecode(self, info):
         return self.typecode or None
