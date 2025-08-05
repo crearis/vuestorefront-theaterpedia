@@ -2,6 +2,7 @@
 # Copyright 2024 theaterpedia.org, Hans Dönitz
 # License LGPL-3.0 or later (http://www.gnu.org/licenses/lgpl).
 
+
 import graphene
 from odoo.http import request
 

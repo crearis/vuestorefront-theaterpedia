@@ -16,6 +16,7 @@ from . import shop
 from . import blog
 from . import event
 from . import post
+from . import domainuser
 from . import payment
 from . import wishlist
 from . import mailing_list

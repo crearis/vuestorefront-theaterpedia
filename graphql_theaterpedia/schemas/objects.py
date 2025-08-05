@@ -377,8 +377,9 @@ class DomainUser(OdooObjectType):
 
     def resolve_sync_id(self, info):
         domain_code = self.domain_id.domain_code
-        email = self.self.user_id.login
-        return "{}.{}".format(domain_code, email) or None
+        userid = self.user_id.id
+        role = self.role or "user"
+        return "{}.domuser-{}__{}".format(domain_code, role, userid) or None
 
 class Currency(OdooObjectType):
     id = graphene.Int(required=True)
@@ -678,7 +679,12 @@ class Event(OdooObjectType):
     # first_variant = graphene.Field((lambda: Product), description='Specific to use in Product Template')
 
     def resolve_slug(self, info):
-        name = slugify(self.name or "").strip().strip("-")
+        template_code = 'evnt'
+
+        if self.use_template_codes:
+            template_code = self.event_type_id.name
+
+        name = slugify(template_code or "").strip().strip("-")
         slug = "/{}-{}".format(name, self.id)
         return slug or None
 
@@ -686,11 +692,21 @@ class Event(OdooObjectType):
         domain_code = "private"
         if self.website_id:
             domain_code = self.website_id.domain_code
-        template_code = self.template_code
-        if template_code == "" or template_code == False:
-            template_code = "evnt"
-        odoo_post_id = self.id
-        return "{}.evnt-{}.{}".format(domain_code, template_code, odoo_post_id) or None
+            
+        template_code = 'evnt'
+
+        if self.use_template_codes:
+            template_code = self.event_type_id.name
+
+        odoo_event_id = self.id
+        return "{}.evnt-{}__{}".format(domain_code, template_code, odoo_event_id) or None
+
+    def resolve_template_code(self, info):
+        template_code = 'evnt'
+
+        if self.use_template_codes:
+            template_code = self.event_type_id.name
+        return template_code or None
 
     def resolve_version(self, info):
         return 1
@@ -794,9 +810,6 @@ class Event(OdooObjectType):
 
     def resolve_qty(self, info):
         return self.free_qty """
-
-    def resolve_slug(self, info):
-        return self.website_slug
 
     """ def resolve_alternative_products(self, info):
         return self.alternative_product_ids or None
