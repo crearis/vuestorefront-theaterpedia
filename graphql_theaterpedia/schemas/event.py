@@ -13,9 +13,10 @@ from odoo.addons.graphql_theaterpedia.schemas.objects import (
     SortEnum, Event, EventStage, EventType, EventEditMode
 )
 
-def get_event(env, event_id):
+def get_event(env, event_cid):
     Event = env['event.event'].with_context().sudo()
-    event = Event.browse(event_id)
+    event = Event.search([('cid', '=', event_cid)], limit=1)
+    # event = Event.browse(event_id)
 
     #TODO _07 check_access_rights('read') for event
     # Validate if the blog-post exists and if the user has access to this address
@@ -191,10 +192,11 @@ class EventQuery(graphene.ObjectType):
         return EventList(events=events, total_count=total_count, min_date=min_date, max_date=max_date)          
 
 class UpdateEventInput(graphene.InputObjectType):
-    id = graphene.Int(required=True)
+    cid = graphene.String(required=True, description="Crearis ID of the event to update.")
+    version = graphene.Int(required=True, description="old Version of the event to update.")
     name = graphene.String()
     overline = graphene.String()
-    template_code = graphene.String()
+    # template_code = graphene.String()
     teasertext = graphene.String()
     description = graphene.String()
     blocks = GenericScalar()
@@ -212,7 +214,20 @@ class UpdateEvent(graphene.Mutation):
     @staticmethod
     def mutate(self, info, event):
         env = info.context["env"]
-        EventEvent = get_event(env, event['id'])
+        EventEvent = get_event(env, event['cid'])
+
+        if EventEvent.version != event['version']:
+            raise GraphQLError(_('Event version mismatch. Please refresh the event and try again.'))
+
+        # Check if the user has write access to the event
+        if not EventEvent.check_access_rights('write'):
+            raise GraphQLError(_('You do not have permission to update this event.'))
+
+        # Prepare values to update
+        # Note: The fields in the event object should match the fields in the Event model
+        # and should be validated before updating.
+        # Here we assume that the event object contains the necessary fields to update.
+        # If any field is not provided, it will not be updated.
 
         values = {
             'name': event.get('name'),
@@ -220,7 +235,7 @@ class UpdateEvent(graphene.Mutation):
             'subtitle': event.get('overline'),
             'description': event.get('description'),
             'teasertext': event.get('teasertext'),
-            'template_code': event.get('template_code'),
+            # 'template_code': event.get('template_code'),
             'blocks': event.get('blocks'),
             'website_meta_title': event.get('meta_title'),
             'website_meta_keywords': event.get('meta_keywords'),
@@ -235,8 +250,8 @@ class UpdateEvent(graphene.Mutation):
             values.update({'subtitle': event['overline']})
         if event.get('teasertext'):
             values.update({'teasertext': event['teasertext']})        
-        if event.get('template_code'):
-            values.update({'template_code': event['template_code']})
+        # if event.get('template_code'):
+        #    values.update({'template_code': event['template_code']})
         if event.get('description'):
             values.update({'description': event['description']})
         if event.get('blocks'):

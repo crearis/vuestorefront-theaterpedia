@@ -389,18 +389,17 @@ class Currency(OdooObjectType):
 
 class Post(OdooObjectType):
     id = graphene.Int(required=True)
+    cid = graphene.String()
     version = graphene.Int()
+    domain_code = graphene.String(required=True)
     author = graphene.Field(lambda: Partner)
     blog = graphene.Field(lambda: Blog)
     website = graphene.Field(lambda: Website)
     homesite = graphene.Field(lambda: Website)
-    domain_code = graphene.String()
-    sync_id = graphene.String()
     visits = graphene.Int()
     is_published = graphene.Boolean()
     published_date = graphene.String()
     post_date = graphene.String()
-    sync_id = graphene.String()
     write_date = graphene.String()
     headline = graphene.String()
     overline = graphene.String()
@@ -428,7 +427,10 @@ class Post(OdooObjectType):
         return self.author_id or None
 
     def resolve_version(self, info):
-        return 1
+        return self.version or None
+
+    def resolve_domain_code(self, info):
+        return self.domain_code or None
 
     def resolve_blocks(self, info):
         return self.blocks or None
@@ -442,13 +444,8 @@ class Post(OdooObjectType):
     def resolve_homesite(self, info):
         return self.homesite_id or None
 
-    def resolve_sync_id(self, info):
-        domain_code = self.homesite_id.domain_code
-        template_code = self.blog_id.template_code
-        if template_code == "":
-            template_code = "blog"
-        odoo_post_id = self.id
-        return "{}.post-{}.{}".format(domain_code, template_code, odoo_post_id) or None
+    def resolve_cid(self, info):
+        return self.cid or None
 
     def resolve_headline(self, info):
         return self.name or None
@@ -613,9 +610,9 @@ class EventStage(OdooObjectType):
 class Event(OdooObjectType):
     id = graphene.Int(required=True)
     cid = graphene.String()
-    sync_id = graphene.String()
     version = graphene.Int()
     template_code = graphene.String()
+    domain_code = graphene.String(required=True)
     name = graphene.String()
     headline = graphene.String()
     overline = graphene.String()
@@ -631,7 +628,6 @@ class Event(OdooObjectType):
     barcode = graphene.String()
     teasertext = graphene.String()
     description = graphene.String()
-    sync_id = graphene.String()
     write_date = graphene.String()
     blocks = generic.GenericScalar()
     ticket_instructions = graphene.String()
@@ -692,25 +688,15 @@ class Event(OdooObjectType):
         slug = "/{}-{}".format(name, self.id)
         return slug or None
 
-    def resolve_sync_id(self, info):
-        domain_code = "private"
-        if self.website_id:
-            domain_code = self.website_id.domain_code
-            
-        template_code = 'evnt'
-
-        if self.use_template_codes:
-            template_code = self.event_type_id.name
-
-        odoo_event_id = self.id
-        return "{}.evnt-{}__{}".format(domain_code, template_code, odoo_event_id) or None
-
     def resolve_template_code(self, info):
         template_code = 'evnt'
 
         if self.use_template_codes:
             template_code = self.event_type_id.name
         return template_code or None
+
+    def resolve_domain_code(self, info):
+        return self.domain_id.domain_code or None
 
     def resolve_version(self, info):
         return self.version or 1

@@ -11,9 +11,9 @@ from odoo.addons.graphql_theaterpedia.schemas.objects import (
     SortEnum, Post, Blog
 )
 
-def get_post(env, post_id):
+def get_post(env, cid):
     BlogPost = env['blog.post'].with_context().sudo()
-    post = BlogPost.browse(post_id)
+    post = BlogPost.search([('cid', '=', cid)], limit=1)
 
     #TODO _07 check_access_rights('read') for post
     # Validate if the blog-post exists and if the user has access to this address
@@ -63,12 +63,12 @@ class PostQuery(graphene.ObjectType):
     )
 
     @staticmethod
-    def resolve_post(self, info, id=None, slug=None):
+    def resolve_post(self, info, cid=None, slug=None):
         env = info.context['env']
         Post = env['blog.post'].sudo()
 
-        if id:
-            post = Post.search([('id', '=', id)], limit=1)
+        if cid:
+            post = Post.search([('cid', '=', cid)], limit=1)
         elif slug:
             post = Post.search([('website_slug', '=', slug)], limit=1)
         else:
@@ -126,7 +126,8 @@ class AddBlogPostInput(graphene.InputObjectType):
     meta_description = graphene.String()    
 
 class UpdatePostInput(graphene.InputObjectType):
-    id = graphene.Int(required=True)
+    cid = graphene.String(required=True, description="Crearis ID of the event to update.")
+    version = graphene.Int(required=True, description="old Version of the event to update.")
     headline = graphene.String()
     """ partner-id """
     author_id = graphene.Int()
@@ -174,11 +175,18 @@ class UpdatePost(graphene.Mutation):
     @staticmethod
     def mutate(self, info, post):
         env = info.context["env"]
-        BlogPost = get_post(env, post['id'])
+        BlogPost = get_post(env, post['cid'])
+        # print the current version
+        # print("Current Blog Post Version:", BlogPost.version)
+        # print the cid
+        # print("Current Blog Post CID:", BlogPost.cid)
+
+        if BlogPost.version != post['version']:
+            raise GraphQLError(_('Blog post version mismatch. Please refresh the blog post and try again.'))
 
         values = {
             'name': post.get('headline'),
-            'author_id': post.get('author_id'),
+            # 'author_id': post.get('author_id'),
             'subtitle': post.get('overline'),
             'description': post.get('teasertext'),
             'blocks': post.get('blocks'),
@@ -189,8 +197,8 @@ class UpdatePost(graphene.Mutation):
 
         if post.get('headline'):
             values.update({'name': post['headline']})
-        if post.get('author_id'):
-            values.update({'author_id': post['author_id']})
+        # if post.get('author_id'):
+        #    values.update({'author_id': post['author_id']})
         if post.get('overline'):
             values.update({'subtitle': post['overline']})
         if post.get('teasertext'):
@@ -206,6 +214,10 @@ class UpdatePost(graphene.Mutation):
 
         if values:
             BlogPost.write(values)
+
+        # print the updated blogPost: Version, subtitle
+        # print("Updated Blog Post Version:", BlogPost.version)
+        # print("Updated Blog Post Subtitle:", BlogPost.subtitle)
 
         return BlogPost
     
