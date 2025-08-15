@@ -88,6 +88,15 @@ class PostQuery(graphene.ObjectType):
         domain = [] # env['website'].get_current_website().website_domain()
         order = get_search_order(sort)
 
+        website = env['website'].get_current_website()
+
+        if not website.is_hubsite:
+            website_ids = [website_id for website_id in website.post_domain_ids.ids]
+            # add the local website-id
+            website_ids.append(website.id)
+            print('domainCode:', website.domain_code, ' | website_ids:', website_ids, ' | is_hubsite:', website.is_hubsite)
+            domain += [('website_id', 'in', website_ids)]
+
         # Filter by blogs or default to all
         if filter.get('blogs', False):
             blog_ids = [blog_id for blog_id in filter['blogs']]
@@ -121,6 +130,9 @@ class AddBlogPostInput(graphene.InputObjectType):
     overline = graphene.String()
     teasertext = graphene.String()
     blocks = GenericScalar()
+    md = graphene.String()
+    public = graphene.Boolean()
+    publish_date = graphene.Date() 
     # meta_title = graphene.String()
     meta_keywords = graphene.String()
     meta_description = graphene.String()    
@@ -134,6 +146,9 @@ class UpdatePostInput(graphene.InputObjectType):
     overline = graphene.String()
     teasertext = graphene.String()
     blocks = GenericScalar()
+    md = graphene.String()
+    public = graphene.Boolean()
+    publish_date = graphene.Date()
     # meta_title = graphene.String()
     meta_keywords = graphene.String()
     meta_description = graphene.String()
@@ -156,6 +171,9 @@ class AddPost(graphene.Mutation):
             'subtitle': post.get('overline'),
             'description': post.get('teasertext'),
             'blocks': post.get('blocks'),
+            'is_published': post.get('public'),
+            'published_date': post.get('publish_date'),
+            'md': post.get('md'),
             'website_meta_keywords': post.get('meta_keywords'),
             'website_meta_description': post.get('meta_description'),               
         }
@@ -190,6 +208,9 @@ class UpdatePost(graphene.Mutation):
             'subtitle': post.get('overline'),
             'description': post.get('teasertext'),
             'blocks': post.get('blocks'),
+            'is_published': post.get('public'),
+            'published_date': post.get('publish_date'),
+            'md': post.get('md'),
             'website_meta_keywords': post.get('meta_keywords'),
             'website_meta_description': post.get('meta_description'),            
         }
@@ -205,6 +226,12 @@ class UpdatePost(graphene.Mutation):
             values.update({'description': post['teasertext']})
         if post.get('blocks'):
             values.update({'blocks': post['blocks']})
+        if post.get('public'):
+            values.update({'is_published': post['public']})
+        if post.get('publish_date'):
+            values.update({'published_date': post['publish_date']})
+        if post.get('md'):
+            values.update({'md': post['md']})
         if post.get('meta_title'):
             values.update({'website_meta_title': post['meta_title']})            
         if post.get('meta_keywords'):

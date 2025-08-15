@@ -219,6 +219,7 @@ class Company(OdooObjectType):
     phone = graphene.String()
     mobile = graphene.String()
     image = graphene.String()
+    partner = graphene.Field(lambda: Partner)
     vat = graphene.String()
     social_twitter = graphene.String()
     social_facebook = graphene.String()
@@ -227,6 +228,9 @@ class Company(OdooObjectType):
     social_youtube = graphene.String()
     social_instagram = graphene.String()
 
+    def resolve_partner(self, info):
+        return self.partner_id or None
+
     def resolve_country(self, info):
         return self.country_id or None
 
@@ -234,7 +238,10 @@ class Company(OdooObjectType):
         return self.state_id or None
 
     def resolve_image(self, info):
-        return "/web/image/res.company/{}/image_1920".format(self.id)
+        return "/web/image/res.partner/{}/image_1920".format(self.partner_id)
+
+    def resolve_image_path(self, info):
+        return "/web/image/res.partner/{}/".format(self.partner_id)
 
 
 class Pricelist(OdooObjectType):
@@ -269,10 +276,16 @@ class Partner(OdooObjectType):
     signup_valid = graphene.String()
     parent_id = graphene.Field(lambda: Partner)
     image = graphene.String()
+    image_path = graphene.String()
     vat = graphene.String()
     public_pricelist = graphene.Field(lambda: Pricelist)
     current_pricelist = graphene.Field(lambda: Pricelist)
-    body_md = graphene.String()
+    header_type = graphene.String()
+    header_size = graphene.String()
+    format_options = generic.GenericScalar()
+    md = graphene.String()
+    public = graphene.Boolean()
+    website_link = graphene.String()
 
     def resolve_state(self, info):
         return self.state_id or None
@@ -280,8 +293,8 @@ class Partner(OdooObjectType):
     def resolve_country(self, info):
         return self.country_id or None
 
-    def resolve_body_md(self, info):
-        return self.body_md or None
+    def resolve_md(self, info):
+        return self.md or None
 
     def resolve_address_type(self, info):
         return self.type or None
@@ -304,6 +317,9 @@ class Partner(OdooObjectType):
     def resolve_image(self, info):
         return "/web/image/res.partner/{}/image_1920".format(self.id)
 
+    def resolve_image_path(self, info):
+        return "/web/image/res.partner/{}/".format(self.id)
+
     def resolve_public_pricelist(self, info):
         website = self.env["website"].get_current_website()
         partner = website.user_id.sudo().partner_id
@@ -316,6 +332,11 @@ class Partner(OdooObjectType):
         website = self.env["website"].get_current_website()
         return website.get_current_pricelist()
 
+    def resolve_public(self, info):
+        return self.is_published or False
+
+    def resolve_website_link(self, info):
+        return self.is_published and self.website or None
 
 class User(OdooObjectType):
     id = graphene.Int(required=True)
@@ -391,20 +412,25 @@ class Post(OdooObjectType):
     id = graphene.Int(required=True)
     cid = graphene.String()
     version = graphene.Int()
-    domain_code = graphene.String(required=True)
     author = graphene.Field(lambda: Partner)
     blog = graphene.Field(lambda: Blog)
     website = graphene.Field(lambda: Website)
     homesite = graphene.Field(lambda: Website)
+    domain_code = graphene.String()
     visits = graphene.Int()
-    is_published = graphene.Boolean()
-    published_date = graphene.String()
+    public = graphene.Boolean()
+    publish_date = graphene.String()
     post_date = graphene.String()
     write_date = graphene.String()
     headline = graphene.String()
     overline = graphene.String()
     teasertext = graphene.String()
     content = graphene.String()
+    header_type = graphene.String()
+    header_size = graphene.String()
+    format_options = generic.GenericScalar()
+    cimg = graphene.String()
+    md = graphene.String()
     blocks = generic.GenericScalar()
     meta_title = graphene.String()
     meta_keywords = graphene.String()
@@ -430,10 +456,37 @@ class Post(OdooObjectType):
         return self.version or None
 
     def resolve_domain_code(self, info):
-        return self.domain_code or None
+        return self.website_id.domain_code or None
+
+    def resolve_public(self, info):
+        return self.is_published or False   
+
+    def resolve_publish_date(self, info):
+        return self.published_date or None   
+
+    def resolve_post_date(self, info):
+        return self.post_date or None
 
     def resolve_blocks(self, info):
         return self.blocks or None
+
+    def resolve_header_type(self, info):
+        return self.header_type or None
+
+    def resolve_header_size(self, info):
+        return self.header_size or None
+
+    def resolve_format_options(self, info):
+        # strip " from the start or end of self.format_options
+        if self.format_options:
+            return self.format_options.strip('"')
+        return None
+
+    def resolve_cimg(self, info):
+        return self.cimg or None
+
+    def resolve_md(self, info):
+        return self.md or None
 
     def resolve_blog(self, info):
         return self.blog_id or None
@@ -622,6 +675,9 @@ class Event(OdooObjectType):
     organizer = graphene.Field(lambda: Partner)
     location = graphene.Field(lambda: Partner)
     event_type = graphene.Field(lambda: EventType)
+    header_type = graphene.String()
+    header_size = graphene.String()
+    format_options = generic.GenericScalar()    
     edit_mode = EventEditMode()
     stage = graphene.Field(lambda: EventStage)
     visibility = graphene.Int()
@@ -703,6 +759,17 @@ class Event(OdooObjectType):
 
     def resolve_typecode(self, info):
         return self.typecode or None
+
+    def resolve_header_type (self, info):
+        return self.header_type or None
+
+    def resolve_header_size (self, info):
+        return self.header_size or None    
+
+    def resolve_format_options(self, info):
+        if self.format_options:
+            return self.format_options
+        return None
 
     def resolve_public_user(self, info):
         return self.user_id or None
