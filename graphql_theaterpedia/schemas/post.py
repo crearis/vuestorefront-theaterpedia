@@ -123,11 +123,10 @@ class PostQuery(graphene.ObjectType):
         return PostList(posts=posts, total_count=total_count)
     
 class AddBlogPostInput(graphene.InputObjectType):
-    headline = graphene.String(required=True)
+    heading = graphene.String(required=True)
     """ partner-id """
     author_id = graphene.Int(required=True)
     blog_id = graphene.Int(required=True)
-    overline = graphene.String()
     teasertext = graphene.String()
     blocks = GenericScalar()
     md = graphene.String()
@@ -140,10 +139,9 @@ class AddBlogPostInput(graphene.InputObjectType):
 class UpdatePostInput(graphene.InputObjectType):
     cid = graphene.String(required=True, description="Crearis ID of the event to update.")
     version = graphene.Int(required=True, description="old Version of the event to update.")
-    headline = graphene.String()
+    heading = graphene.String()
     """ partner-id """
     author_id = graphene.Int()
-    overline = graphene.String()
     teasertext = graphene.String()
     blocks = GenericScalar()
     md = graphene.String()
@@ -165,10 +163,9 @@ class AddPost(graphene.Mutation):
         BlogPost = env['blog.post'].sudo().with_context(tracking_disable=True)
 
         values = {
-            'name': post.get('headline'),
+            'name': post.get('heading'),
             'author_id': post.get('author_id'),
             'blog_id': post.get('blog_id'),
-            'subtitle': post.get('overline'),
             'description': post.get('teasertext'),
             'blocks': post.get('blocks'),
             'is_published': post.get('public'),
@@ -181,6 +178,10 @@ class AddPost(graphene.Mutation):
 
         # Create post entry
         post = BlogPost.create(values)
+
+        # Invalidate cache to ensure fresh reads
+        new_post.invalidate_cache()
+        new_post = BlogPost.browse(new_post.id)        
 
         return post
     
@@ -203,9 +204,8 @@ class UpdatePost(graphene.Mutation):
             raise GraphQLError(_('Blog post version mismatch. Please refresh the blog post and try again.'))
 
         values = {
-            'name': post.get('headline'),
+            'name': post.get('heading'),
             # 'author_id': post.get('author_id'),
-            'subtitle': post.get('overline'),
             'description': post.get('teasertext'),
             'blocks': post.get('blocks'),
             'is_published': post.get('public'),
@@ -216,12 +216,10 @@ class UpdatePost(graphene.Mutation):
         }
         #             'website_meta_title': post.get('meta_title'),
 
-        if post.get('headline'):
-            values.update({'name': post['headline']})
+        if post.get('heading'):
+            values.update({'name': post['heading']})
         # if post.get('author_id'):
         #    values.update({'author_id': post['author_id']})
-        if post.get('overline'):
-            values.update({'subtitle': post['overline']})
         if post.get('teasertext'):
             values.update({'description': post['teasertext']})
         if post.get('blocks'):
@@ -241,6 +239,10 @@ class UpdatePost(graphene.Mutation):
 
         if values:
             BlogPost.write(values)
+
+            # Invalidate cache to ensure fresh reads
+            BlogPost.invalidate_cache()
+            BlogPost = BlogPost.browse(BlogPost.id)            
 
         # print the updated blogPost: Version, subtitle
         # print("Updated Blog Post Version:", BlogPost.version)

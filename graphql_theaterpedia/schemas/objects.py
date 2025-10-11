@@ -280,10 +280,26 @@ class Partner(OdooObjectType):
     vat = graphene.String()
     public_pricelist = graphene.Field(lambda: Pricelist)
     current_pricelist = graphene.Field(lambda: Pricelist)
+    
+    # Header configuration (partner-specific, not in options)
     header_type = graphene.String()
     header_size = graphene.String()
-    format_options = generic.GenericScalar()
+    cimg = graphene.String()
+    
     md = graphene.String()
+    
+    # Format options sections (JSON objects) - return False if empty
+    page_options = generic.GenericScalar()
+    aside_options = generic.GenericScalar()
+    header_options = generic.GenericScalar()
+    footer_options = generic.GenericScalar()
+    
+    # Boolean flags for whether options exist
+    page_has_content = graphene.Boolean()
+    aside_has_content = graphene.Boolean()
+    header_has_content = graphene.Boolean()
+    footer_has_content = graphene.Boolean()
+    
     public = graphene.Boolean()
     website_link = graphene.String()
 
@@ -332,6 +348,54 @@ class Partner(OdooObjectType):
         website = self.env["website"].get_current_website()
         return website.get_current_pricelist()
 
+    # Header resolvers (partner-specific fields)
+    def resolve_header_type(self, info):
+        return self.header_type or None
+
+    def resolve_header_size(self, info):
+        return self.header_size or None
+
+    def resolve_cimg(self, info):
+        return self.cimg or None
+
+    # Format options section resolvers - return False if empty (GraphQL best practice)
+    def resolve_page_options(self, info):
+        """Return page options JSON or False if empty"""
+        if not self.page_options or not isinstance(self.page_options, dict) or not self.page_options:
+            return False
+        return self.page_options
+
+    def resolve_aside_options(self, info):
+        """Return aside options JSON or False if empty"""
+        if not self.aside_options or not isinstance(self.aside_options, dict) or not self.aside_options:
+            return False
+        return self.aside_options
+
+    def resolve_header_options(self, info):
+        """Return header options JSON or False if empty"""
+        if not self.header_options or not isinstance(self.header_options, dict) or not self.header_options:
+            return False
+        return self.header_options
+
+    def resolve_footer_options(self, info):
+        """Return footer options JSON or False if empty"""
+        if not self.footer_options or not isinstance(self.footer_options, dict) or not self.footer_options:
+            return False
+        return self.footer_options
+
+    # Boolean flags for whether options exist
+    def resolve_page_has_content(self, info):
+        return bool(self.page_options and isinstance(self.page_options, dict) and self.page_options)
+
+    def resolve_aside_has_content(self, info):
+        return bool(self.aside_options and isinstance(self.aside_options, dict) and self.aside_options)
+
+    def resolve_header_has_content(self, info):
+        return bool(self.header_options and isinstance(self.header_options, dict) and self.header_options)
+
+    def resolve_footer_has_content(self, info):
+        return bool(self.footer_options and isinstance(self.footer_options, dict) and self.footer_options)
+
     def resolve_public(self, info):
         return self.is_published or False
 
@@ -353,17 +417,46 @@ class User(OdooObjectType):
 
 class DomainUser(OdooObjectType):
     id = graphene.Int(required=True)
-    name = graphene.String(required=True)
-    email = graphene.String(required=True)
-    slug = graphene.String()
+    cid = graphene.String()
     version = graphene.Int()
-    sync_id = graphene.String()
+    
+    # User and domain info
     user = graphene.Field(lambda: User)
     domain_code = graphene.String(required=True)
+    email = graphene.String(required=True)
+    
+    # Role and description
     role = graphene.String(required=True)
     title = graphene.String()
     description = graphene.String()
-    capabilities = graphene.String(required=True)
+    active = graphene.Boolean()
+    
+    # Settings JSON structure
+    settings = generic.GenericScalar()
+    capabilities = graphene.String()
+    custom_md = graphene.Boolean()
+    content_options = graphene.String()
+    
+    # Header configuration (domainuser-specific, not in options)
+    header_type = graphene.String()
+    header_size = graphene.String()
+    cimg = graphene.String()
+    
+    # Body content (only populated if custom_md is true)
+    md = graphene.String()
+    
+    # Format options sections (JSON objects) - return False if empty
+    page_options = generic.GenericScalar()
+    aside_options = generic.GenericScalar()
+    header_options = generic.GenericScalar()
+    footer_options = generic.GenericScalar()
+    
+    # Utility fields
+    slug = graphene.String()
+    write_date = graphene.String()
+
+    def resolve_cid(self, info):
+        return self.cid or None
 
     def resolve_email(self, info):
         return self.user_id.login or None
@@ -384,24 +477,72 @@ class DomainUser(OdooObjectType):
     def resolve_role(self, info):
         return self.role or None
 
-    def resolve_capabilities(self, info):
-        return self.capabilities or None
+    def resolve_title(self, info):
+        return self.name or None
 
     def resolve_description(self, info):
         return self.description or ''
 
-    def resolve_body_md(self, info):
-        return self.body_md or None
+    def resolve_active(self, info):
+        return self.active if hasattr(self, 'active') else True
+
+    # Settings resolvers
+    def resolve_settings(self, info):
+        return self.settings or {}
+
+    def resolve_capabilities(self, info):
+        return self.capabilities or ''
+
+    def resolve_custom_md(self, info):
+        return self.custom_md or False
+
+    def resolve_content_options(self, info):
+        return self.content_options or ''
+
+    # Header resolvers (domainuser-specific fields)
+    def resolve_header_type(self, info):
+        return self.header_type or None
+
+    def resolve_header_size(self, info):
+        return self.header_size or None
+
+    def resolve_cimg(self, info):
+        return self.cimg or None
+
+    # Body resolver (only if custom_md is true)
+    def resolve_md(self, info):
+        return self.md if self.custom_md else None
+
+    # Format options section resolvers - return False if empty (GraphQL best practice)
+    def resolve_page_options(self, info):
+        """Return page options JSON or False if empty"""
+        if not self.page_options or not isinstance(self.page_options, dict) or not self.page_options:
+            return False
+        return self.page_options
+
+    def resolve_aside_options(self, info):
+        """Return aside options JSON or False if empty"""
+        if not self.aside_options or not isinstance(self.aside_options, dict) or not self.aside_options:
+            return False
+        return self.aside_options
+
+    def resolve_header_options(self, info):
+        """Return header options JSON or False if empty"""
+        if not self.header_options or not isinstance(self.header_options, dict) or not self.header_options:
+            return False
+        return self.header_options
+
+    def resolve_footer_options(self, info):
+        """Return footer options JSON or False if empty"""
+        if not self.footer_options or not isinstance(self.footer_options, dict) or not self.footer_options:
+            return False
+        return self.footer_options
 
     def resolve_version(self, info):
-        return 1
+        return self.version or 1
 
-    def resolve_sync_id(self, info):
-        domain_code = self.domain_id.domain_code
-        userid = self.user_id.id
-        role = self.role or "user"
-        return "{}.domuser-{}__{}".format(domain_code, role, userid) or None
-
+    def resolve_write_date(self, info):
+        return self.write_date or None
 class Currency(OdooObjectType):
     id = graphene.Int(required=True)
     name = graphene.String()
@@ -422,16 +563,30 @@ class Post(OdooObjectType):
     publish_date = graphene.String()
     post_date = graphene.String()
     write_date = graphene.String()
-    headline = graphene.String()
-    overline = graphene.String()
+    heading = graphene.String()
     teasertext = graphene.String()
     content = graphene.String()
+    
+    # Header configuration (post-specific, not in options)
     header_type = graphene.String()
     header_size = graphene.String()
-    format_options = generic.GenericScalar()
     cimg = graphene.String()
+    
     md = graphene.String()
     blocks = generic.GenericScalar()
+    
+    # Format options sections (JSON objects) - return False if empty
+    page_options = generic.GenericScalar()
+    aside_options = generic.GenericScalar()
+    header_options = generic.GenericScalar()
+    footer_options = generic.GenericScalar()
+    
+    # Boolean flags for whether options exist
+    page_has_content = graphene.Boolean()
+    aside_has_content = graphene.Boolean()
+    header_has_content = graphene.Boolean()
+    footer_has_content = graphene.Boolean()
+    
     meta_title = graphene.String()
     meta_keywords = graphene.String()
     meta_description = graphene.String()
@@ -470,23 +625,56 @@ class Post(OdooObjectType):
     def resolve_blocks(self, info):
         return self.blocks or None
 
+    # Header resolvers (post-specific fields)
     def resolve_header_type(self, info):
         return self.header_type or None
 
     def resolve_header_size(self, info):
         return self.header_size or None
 
-    def resolve_format_options(self, info):
-        # strip " from the start or end of self.format_options
-        if self.format_options:
-            return self.format_options.strip('"')
-        return None
-
     def resolve_cimg(self, info):
         return self.cimg or None
 
     def resolve_md(self, info):
         return self.md or None
+
+    # Format options section resolvers - return False if empty (GraphQL best practice)
+    def resolve_page_options(self, info):
+        """Return page options JSON or False if empty"""
+        if not self.page_options or not isinstance(self.page_options, dict) or not self.page_options:
+            return False
+        return self.page_options
+
+    def resolve_aside_options(self, info):
+        """Return aside options JSON or False if empty"""
+        if not self.aside_options or not isinstance(self.aside_options, dict) or not self.aside_options:
+            return False
+        return self.aside_options
+
+    def resolve_header_options(self, info):
+        """Return header options JSON or False if empty"""
+        if not self.header_options or not isinstance(self.header_options, dict) or not self.header_options:
+            return False
+        return self.header_options
+
+    def resolve_footer_options(self, info):
+        """Return footer options JSON or False if empty"""
+        if not self.footer_options or not isinstance(self.footer_options, dict) or not self.footer_options:
+            return False
+        return self.footer_options
+
+    # Boolean flags for whether options exist
+    def resolve_page_has_content(self, info):
+        return bool(self.page_options and isinstance(self.page_options, dict) and self.page_options)
+
+    def resolve_aside_has_content(self, info):
+        return bool(self.aside_options and isinstance(self.aside_options, dict) and self.aside_options)
+
+    def resolve_header_has_content(self, info):
+        return bool(self.header_options and isinstance(self.header_options, dict) and self.header_options)
+
+    def resolve_footer_has_content(self, info):
+        return bool(self.footer_options and isinstance(self.footer_options, dict) and self.footer_options)
 
     def resolve_blog(self, info):
         return self.blog_id or None
@@ -500,11 +688,8 @@ class Post(OdooObjectType):
     def resolve_cid(self, info):
         return self.cid or None
 
-    def resolve_headline(self, info):
+    def resolve_heading(self, info):
         return self.name or None
-
-    def resolve_overline(self, info):
-        return self.subtitle or None
 
     def resolve_teasertext(self, info):
         return self.description or None
@@ -666,18 +851,19 @@ class Event(OdooObjectType):
     version = graphene.Int()
     template_code = graphene.String()
     domain_code = graphene.String(required=True)
-    name = graphene.String()
-    headline = graphene.String()
-    overline = graphene.String()
+    heading = graphene.String()
     public_user = graphene.Field(lambda: User)
     company = graphene.Field(lambda: Partner)
     website = graphene.Field(lambda: Website)
     organizer = graphene.Field(lambda: Partner)
     location = graphene.Field(lambda: Partner)
     event_type = graphene.Field(lambda: EventType)
+    
+    # Header configuration (event-specific, not in options)
     header_type = graphene.String()
     header_size = graphene.String()
-    format_options = generic.GenericScalar()    
+    cimg = graphene.String()
+    
     edit_mode = EventEditMode()
     stage = graphene.Field(lambda: EventStage)
     visibility = graphene.Int()
@@ -685,6 +871,7 @@ class Event(OdooObjectType):
     teasertext = graphene.String()
     description = graphene.String()
     write_date = graphene.String()
+    md = graphene.String()    
     blocks = generic.GenericScalar()
     ticket_instructions = graphene.String()
     note = graphene.String()
@@ -692,44 +879,24 @@ class Event(OdooObjectType):
     meta_title = graphene.String()
     meta_keywords = graphene.String()
     meta_description = graphene.String()
-    # TODO _05 Image via Product
-    # image = graphene.String()
-    # small_image = graphene.String()
-    # image_filename = graphene.String()
-    # thumbnail = graphene.String()
-    # media_gallery = graphene.List(graphene.NonNull(lambda: ProductImage))
-    # allow_out_of_stock = graphene.Boolean()
-    # show_available_qty = graphene.Boolean()
-    # out_of_stock_message = graphene.String()
+    
+    # Format options sections (JSON objects) - return False if empty
+    page_options = generic.GenericScalar()
+    aside_options = generic.GenericScalar()
+    header_options = generic.GenericScalar()
+    footer_options = generic.GenericScalar()
+    
+    # Boolean flags for whether options exist
+    page_has_content = graphene.Boolean()
+    aside_has_content = graphene.Boolean()
+    header_has_content = graphene.Boolean()
+    footer_has_content = graphene.Boolean()
+    
     seats_limited = graphene.Boolean()
     date_begin = graphene.String()
     date_end = graphene.String()
     event_mail_template_id = graphene.String()
     slug = graphene.String()
-    # is_in_wishlist = graphene.Boolean()
-    # TODO _05 Specific for Event:Course/Sessions
-    # qty = graphene.Float()
-
-    # TODO _05 Templates, Variants, Attributes ...
-    # alternative_products = graphene.List(graphene.NonNull(lambda: Product))
-    # accessory_products = graphene.List(graphene.NonNull(lambda: Product))
-    # Specific to use in Product Variant
-    # combination_info_variant = generic.GenericScalar(description='Specific to Product Variant')
-    # variant_price = graphene.Float(description='Specific to Product Variant')
-    # variant_price_after_discount = graphene.Float(description='Specific to Product Variant')
-    # variant_has_discounted_price = graphene.Boolean(description='Specific to Product Variant')
-    # is_variant_possible = graphene.Boolean(description='Specific to Product Variant')
-    # variant_attribute_values = graphene.List(graphene.NonNull(lambda: AttributeValue),
-    #                                         description='Specific to Product Variant')
-
-    # product_template = graphene.Field((lambda: Event), description='Specific to Product Variant')
-    # Specific to use in Product Template
-    # combination_info = generic.GenericScalar(description='Specific to Product Template')
-    # price = graphene.Float(description='Specific to Product Template')
-    # attribute_values = graphene.List(graphene.NonNull(lambda: AttributeValue),
-    #                                 description='Specific to Product Template')
-    # product_variants = graphene.List(graphene.NonNull(lambda: Product), description='Specific to Product Template')
-    # first_variant = graphene.Field((lambda: Product), description='Specific to use in Product Template')
 
     def resolve_cid(self, info):
         return self.cid or None
@@ -760,16 +927,53 @@ class Event(OdooObjectType):
     def resolve_typecode(self, info):
         return self.typecode or None
 
-    def resolve_header_type (self, info):
+    # Header resolvers (event-specific fields)
+    def resolve_header_type(self, info):
         return self.header_type or None
 
-    def resolve_header_size (self, info):
-        return self.header_size or None    
+    def resolve_header_size(self, info):
+        return self.header_size or None
 
-    def resolve_format_options(self, info):
-        if self.format_options:
-            return self.format_options
-        return None
+    def resolve_cimg(self, info):
+        return self.cimg or None
+
+    # Format options section resolvers - return False if empty (GraphQL best practice)
+    def resolve_page_options(self, info):
+        """Return page options JSON or False if empty"""
+        if not self.page_options or not isinstance(self.page_options, dict) or not self.page_options:
+            return False
+        return self.page_options
+
+    def resolve_aside_options(self, info):
+        """Return aside options JSON or False if empty"""
+        if not self.aside_options or not isinstance(self.aside_options, dict) or not self.aside_options:
+            return False
+        return self.aside_options
+
+    def resolve_header_options(self, info):
+        """Return header options JSON or False if empty"""
+        if not self.header_options or not isinstance(self.header_options, dict) or not self.header_options:
+            return False
+        return self.header_options
+
+    def resolve_footer_options(self, info):
+        """Return footer options JSON or False if empty"""
+        if not self.footer_options or not isinstance(self.footer_options, dict) or not self.footer_options:
+            return False
+        return self.footer_options
+
+    # Boolean flags for whether options exist
+    def resolve_page_has_content(self, info):
+        return bool(self.page_options and isinstance(self.page_options, dict) and self.page_options)
+
+    def resolve_aside_has_content(self, info):
+        return bool(self.aside_options and isinstance(self.aside_options, dict) and self.aside_options)
+
+    def resolve_header_has_content(self, info):
+        return bool(self.header_options and isinstance(self.header_options, dict) and self.header_options)
+
+    def resolve_footer_has_content(self, info):
+        return bool(self.footer_options and isinstance(self.footer_options, dict) and self.footer_options)
 
     def resolve_public_user(self, info):
         return self.user_id or None
@@ -801,11 +1005,8 @@ class Event(OdooObjectType):
         else:
             return 0
 
-    def resolve_headline(self, info):
+    def resolve_heading(self, info):
         return self.display_name or None
-
-    def resolve_overline(self, info):
-        return self.subtitle or None
 
     def resolve_teasertext(self, info):
         return self.teasertext or None
@@ -821,106 +1022,6 @@ class Event(OdooObjectType):
 
     def resolve_meta_description(self, info):
         return self.website_meta_description or None
-
-    """ 
-    def resolve_image(self, info):
-        return '/web/image/{}/{}/image_1920'.format(self._name, self.id)
-
-    def resolve_small_image(self, info):
-        return '/web/image/{}/{}/image_128'.format(self._name, self.id)
-
-    def resolve_image_filename(self, info):
-        return slugify(self.name)
-
-    def resolve_thumbnail(self, info):
-        return '/web/image/{}/{}/image_512'.format(self._name, self.id)
-
-    def resolve_categories(self, info):
-        website = self.env['website'].get_current_website()
-        if website:
-            return self.public_categ_ids.filtered(
-                lambda c: not c.website_id or c.website_id and c.website_id.id == website.id) or None
-        return self.public_categ_ids or None
-
-    def resolve_allow_out_of_stock(self, info):
-        return self.allow_out_of_stock_order or None
-
-    def resolve_show_available_qty(self, info):
-        return self.show_availability or None
-
-    def resolve_ribbon(self, info):
-        return self.website_ribbon_id or None
-
-    def resolve_is_in_stock(self, info):
-        return bool(self.free_qty > 0)
-
-    def resolve_is_in_wishlist(self, info):
-        env = info.context["env"]
-        is_in_wishlist = product_is_in_wishlist(env, self)
-        return bool(is_in_wishlist)
-
-    def resolve_media_gallery(self, info):
-        if self._name == 'product.template':
-            return self.product_template_image_ids or None
-        else:
-            return self.product_template_image_ids + self.product_variant_image_ids or None
-
-    def resolve_qty(self, info):
-        return self.free_qty """
-
-    """ def resolve_alternative_products(self, info):
-        return self.alternative_product_ids or None
-
-    def resolve_accessory_products(self, info):
-        return self.accessory_product_ids or None
-
-    # Specific to use in Product Variant
-    def resolve_combination_info_variant(self, info):
-        env = info.context["env"]
-        pricing_info = get_product_pricing_info(env, self)
-        return pricing_info or None
-
-    def resolve_variant_price(self, info):
-        env = info.context["env"]
-        pricing_info = get_product_pricing_info(env, self)
-        return pricing_info['list_price'] or None
-
-    def resolve_variant_price_after_discount(self, info):
-        env = info.context["env"]
-        pricing_info = get_product_pricing_info(env, self)
-        return pricing_info['price'] or None
-
-    def resolve_variant_has_discounted_price(self, info):
-        env = info.context["env"]
-        pricing_info = get_product_pricing_info(env, self)
-        return pricing_info['has_discounted_price']
-
-    def resolve_is_variant_possible(self, info):
-        return self._is_variant_possible()
-
-    def resolve_variant_attribute_values(self, info):
-        return self.product_template_attribute_value_ids or None
-
-    def resolve_product_template(self, info):
-        return self.product_tmpl_id or None
-
-    # Specific to use in Product Template
-    def resolve_combination_info(self, info):
-        env = info.context["env"]
-        pricing_info = get_product_pricing_info(env, self.product_variant_id)
-        return pricing_info or None
-
-    def resolve_price(self, info):
-        return self.list_price or None
-
-    def resolve_attribute_values(self, info):
-        return self.attribute_line_ids.product_template_value_ids or None
-
-    def resolve_product_variants(self, info):
-        return self.product_variant_ids or None
-
-    def resolve_first_variant(self, info):
-        return self.product_variant_id or None """
 
     def resolve_json_ld(self, info):
         return self and self.get_json_ld() or None

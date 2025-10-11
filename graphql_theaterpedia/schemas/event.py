@@ -16,10 +16,7 @@ from odoo.addons.graphql_theaterpedia.schemas.objects import (
 def get_event(env, event_cid):
     Event = env['event.event'].with_context().sudo()
     event = Event.search([('cid', '=', event_cid)], limit=1)
-    # event = Event.browse(event_id)
 
-    #TODO _07 check_access_rights('read') for event
-    # Validate if the blog-post exists and if the user has access to this address
     if not event or not event.exists():
         raise GraphQLError(_('Event not found.'))
     
@@ -37,7 +34,6 @@ def get_search_order(sort):
         else:
             sorting += '%s %s' % (field, val.value)
 
-    # Add id as last factor, so we can consistently get the same results
     if sorting:
         sorting += ', id ASC'
     else:
@@ -48,36 +44,29 @@ def get_search_order(sort):
 def get_search_domain(env, search, **kwargs):
     domains = []
     
-    # Filter if homesite_only=true
     if kwargs.get('homesite_only', False):
         if kwargs['homesite_only']:
             domains.append(env['website'].get_current_website().website_domain())
 
-    # Filter with ids
     if kwargs.get('ids', False):
         domains.append([('id', 'in', kwargs['ids'])])
 
-    # Filter by published-status
     if kwargs.get('published', False):
         domains.append([('is_published', '=', kwargs['published'])])
 
-    # Filter with Event Type
     if kwargs.get('event_type', False):
         domains.append([('event_type_id', '=', kwargs['event_type'])])
 
-    # Filter with Address ID
     if kwargs.get('address_ids', False):
         address_ids = [address for address in kwargs.get['address_ids']]
         domains.append([('address_id', 'in', address_ids)])        
 
-    # Filter by stages or default to 2 or 3
     if kwargs.get('stages', False):
         stages = [stage.id for stage in kwargs.get['stages']]
         domains.append([('stage_id', 'in', stages)])
     else:
         domains.append([('stage_id', 'in', [2, 3])])
 
-    # Filter With Name
     if kwargs.get('name', False):
         name = kwargs['name']
         for n in name.split(" "):
@@ -87,8 +76,6 @@ def get_search_domain(env, search, **kwargs):
         for srch in search.split(" "):
             domains.append([
                 '|', '|', ('name', 'ilike', srch), ('subtitle', 'like', srch), ('description', 'like', srch)])
-            
-    #TODO _06 adopt partial_domain from product.py
 
     return expression.AND(domains)
 
@@ -96,7 +83,6 @@ def get_event_list(env, current_page, page_size, search, sort, **kwargs):
     Event = env['event.event'].sudo()
     domain = get_search_domain(env, search, **kwargs)
 
-    # First offset is 0 but first page is 1
     if current_page > 1:
         offset = (current_page - 1) * page_size
     else:
@@ -115,7 +101,6 @@ def get_event_list(env, current_page, page_size, search, sort, **kwargs):
 class Events(graphene.Interface):
     events = graphene.List(Event)
     total_count = graphene.Int(required=True)
-    # attribute_values = graphene.List(AttributeValue)
     min_date = graphene.String()
     max_date = graphene.String()
 
@@ -139,8 +124,6 @@ class EventFilterInput(graphene.InputObjectType):
     address_id = graphene.List(graphene.Int)
     stages = graphene.List(graphene.Int)
     name = graphene.String()
-    #TODO _06 build min_date and max_date-logic
-    # need to implement date-conversions to get a meaningful mapping in get_event_list
     min_date = graphene.String()
     max_date = graphene.String()
 
@@ -167,10 +150,8 @@ class EventQuery(graphene.ObjectType):
 
         if id:
             event = Event.search([('id', '=', id)], limit=1)
-        #TODO _06 search by slug
         elif slug:  
             raise GraphQLError(_('Filter event.slug not yet implemented.'))
-        #   event = Event.search([('website_slug', '=', slug)], limit=1)
         elif barcode:
             event = Event.search([('barcode', '=', barcode)], limit=1)
         else:
@@ -193,13 +174,27 @@ class EventQuery(graphene.ObjectType):
 
 class UpdateEventInput(graphene.InputObjectType):
     cid = graphene.String(required=True, description="Crearis ID of the event to update.")
-    version = graphene.Int(required=True, description="old Version of the event to update.")
-    name = graphene.String()
-    overline = graphene.String()
-    # template_code = graphene.String()
+    version = graphene.Int(required=True, description="Current version for optimistic locking.")
+    
+    heading = graphene.String()
     teasertext = graphene.String()
     description = graphene.String()
+    
+    # Header (event-specific)
+    header_type = graphene.String()
+    header_size = graphene.String()
+    cimg = graphene.String()
+    
+    # Body
+    md = graphene.String()
     blocks = GenericScalar()
+    
+    # Format options sections (JSON objects)
+    page_options = GenericScalar()
+    aside_options = GenericScalar()
+    header_options = GenericScalar()
+    footer_options = GenericScalar()
+    
     note = graphene.String()
     meta_title = graphene.String()
     meta_keywords = graphene.String()
@@ -219,52 +214,61 @@ class UpdateEvent(graphene.Mutation):
         if EventEvent.version != event['version']:
             raise GraphQLError(_('Event version mismatch. Please refresh the event and try again.'))
 
-        # Check if the user has write access to the event
         if not EventEvent.check_access_rights('write'):
             raise GraphQLError(_('You do not have permission to update this event.'))
 
-        # Prepare values to update
-        # Note: The fields in the event object should match the fields in the Event model
-        # and should be validated before updating.
-        # Here we assume that the event object contains the necessary fields to update.
-        # If any field is not provided, it will not be updated.
+        values = {}
 
-        values = {
-            'name': event.get('name'),
-            'note': event.get('note'),
-            'subtitle': event.get('overline'),
-            'description': event.get('description'),
-            'teasertext': event.get('teasertext'),
-            # 'template_code': event.get('template_code'),
-            'blocks': event.get('blocks'),
-            'website_meta_title': event.get('meta_title'),
-            'website_meta_keywords': event.get('meta_keywords'),
-            'website_meta_description': event.get('meta_description')
-        }
-
-        if event.get('name'):
-            values.update({'name': event['name']})
+        # Basic fields
+        if event.get('heading'):
+            values['name'] = event['heading']
         if event.get('note'):
-            values.update({'note': event['note']})
-        if event.get('overline'):
-            values.update({'subtitle': event['overline']})
+            values['note'] = event['note']
         if event.get('teasertext'):
-            values.update({'teasertext': event['teasertext']})        
-        # if event.get('template_code'):
-        #    values.update({'template_code': event['template_code']})
+            values['teasertext'] = event['teasertext']
         if event.get('description'):
-            values.update({'description': event['description']})
+            values['description'] = event['description']
         if event.get('blocks'):
-            values.update({'blocks': event['blocks']}) 
+            values['blocks'] = event['blocks']
+        
+        # Header fields (event-specific)
+        if event.get('header_type') is not None:
+            values['header_type'] = event['header_type']
+        if event.get('header_size') is not None:
+            values['header_size'] = event['header_size']
+        if event.get('cimg') is not None:
+            values['cimg'] = event['cimg']
+        
+        # Body
+        if event.get('md') is not None:
+            values['md'] = event['md']
+        
+        # Format options sections - set directly as JSON
+        # Use False to clear, or a dict to set/update
+        if 'page_options' in event:
+            values['page_options'] = event['page_options'] if event['page_options'] else False
+        
+        if 'aside_options' in event:
+            values['aside_options'] = event['aside_options'] if event['aside_options'] else False
+        
+        if 'header_options' in event:
+            values['header_options'] = event['header_options'] if event['header_options'] else False
+        
+        if 'footer_options' in event:
+            values['footer_options'] = event['footer_options'] if event['footer_options'] else False
+        
+        # Meta fields
         if event.get('meta_title'):
-            values.update({'website_meta_title': event['meta_title']})            
+            values['website_meta_title'] = event['meta_title']            
         if event.get('meta_keywords'):
-            values.update({'website_meta_keywords': event['meta_keywords']})               
+            values['website_meta_keywords'] = event['meta_keywords']               
         if event.get('meta_description'):
-            values.update({'website_meta_description': event['meta_description']}) 
+            values['website_meta_description'] = event['meta_description']
 
         if values:
             EventEvent.write(values)
+            EventEvent.invalidate_recordset()
+            EventEvent = EventEvent.browse(EventEvent.id)            
 
         return EventEvent
     

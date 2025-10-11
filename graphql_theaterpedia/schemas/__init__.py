@@ -6,6 +6,7 @@
 from . import country
 from . import category
 from . import product
+from . import partner
 from . import order
 from . import invoice
 from . import contact_us

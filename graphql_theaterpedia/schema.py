@@ -8,6 +8,7 @@ from odoo.addons.graphql_base import OdooObjectType
 from odoo.addons.graphql_theaterpedia.schemas import (
     country,
     category,
+    partner,
     product,
     domainuser,
     event,
@@ -35,6 +36,7 @@ class Query(
     blog.BlogQuery,
     post.PostQuery,
     event.EventQuery,
+    partner.PartnerQuery,
     order.OrderQuery,
     invoice.InvoiceQuery,
     user_profile.UserProfileQuery,
@@ -57,6 +59,7 @@ class Mutation(
     sign.SignMutation,
     address.AddressMutation,
     post.BlogPostMutation,
+    domainuser.DomainUserMutation,
     event.EventMutation,
     wishlist.WishlistMutation,
     shop.ShopMutation,
